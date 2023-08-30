@@ -1,0 +1,26 @@
+# Lambda image
+- Should extend tsdat lambda base image
+- Need to add conda to base image to support VAPs
+
+# Pipelines Repo
+- Add protection to the release branch
+- Decide what default branch to use for dev
+
+# CDK Stack
+- Input bucket
+- Output bucket
+- Code Build components
+- Roles/permissions for read/write to buckets
+- Roles/permissions for running lambda functions
+
+
+# Code Build
+- Pipelines config file
+- Script to create docker image for each pipeline
+- Script to create run process lambda function and sns topics
+- Script to create cron lambda on schedule per config settings.
+- Lambda handler function to add to the docker lambda image
+
+# MHKDR Integration
+Need a script to create a dataset in MHKDR and then set up a DataSync resource to keep the tsdat output bucket in sync with the MHKDR dataset bucket.
+DataSync can be created via CDK or boto3 (TBD).

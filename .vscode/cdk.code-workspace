@@ -1,0 +1,46 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../.aws"
+		}
+	],
+	"settings": {
+		"python.defaultInterpreterPath": "/usr/local/bin/python",
+		"workbench.iconTheme": "material-icon-theme",
+		"workbench.tree.indent": 20,
+		"workbench.editor.wrapTabs": true,
+		"workbench.editor.enablePreview": false,
+		"workbench.editor.enablePreviewFromQuickOpen": false,
+		"terminal.integrated.allowChords": false,
+		"window.title": "${rootName}${separator}${activeEditorShort}",
+		"python.analysis.logLevel": "Information",
+		"python.analysis.exclude": [
+		],
+		"debug.toolBarLocation":"docked",
+		"workbench.colorCustomizations": {
+			"activityBar.background": "#53987c",
+			"titleBar.activeBackground": "#53987c",
+			"titleBar.activeForeground": "#FEFAFF",
+			"activityBar.activeBackground": "#fafafa"
+		},
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-python.python",
+			"ms-python.vscode-pylance",
+			"almenon.arepl",
+			"aaron-bond.better-comments",
+			"KevinRose.vsc-python-indent",
+			"njpwerner.autodocstring",
+			"Gruntfuggly.todo-tree",
+			"usernamehw.errorlens",
+			"redhat.vscode-yaml",
+			"PKief.material-icon-theme",
+			"fabiospampinato.vscode-statusbar-debugger",
+			"canadaduane.notes"
+		]
+	},
+}

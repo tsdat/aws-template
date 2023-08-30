@@ -1,0 +1,11 @@
+version: "3.7"
+services:
+    cdk:
+        container_name: cdk
+        hostname: cdk
+        image: cdk
+        build: .
+        command: ['tail', '-f',  '/dev/null']
+        volumes:
+            - ./:/root/cdk_app
+            - ${HOME}/.aws:/root/.aws
