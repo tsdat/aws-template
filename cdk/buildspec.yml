@@ -1,0 +1,36 @@
+version: 0.2
+
+# Buildspec comes from the aws_build primary source artifact.  
+    # Path is stored in the built-in environment variable $CODEBUILD_SRC_DIR
+
+# Pipelines repo is the secondary source artifact.
+    # Path is stored in environment variable $CODEBUILD_SRC_DIR_pipelines (i.e., $CODEBUILD_SRC_DIR_<InputArtifactName>)
+
+# Per https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-env-vars.html
+    # use $CODEBUILD_INITIATOR as it provides the unique entity that started the build
+
+phases:
+
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - echo "Installing dependencies..."
+      - pip install -r requirements.txt
+
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
+
+  build:
+    commands:
+      - echo Build started on `date`
+      
+      # Run the build
+      - cd $CODEBUILD_SRC_DIR/cdk
+      - python -c "from build import PipelineBuild; PipelineBuild().build()"
+    
+  post_build:
+    commands:
+      - echo Build completed on `date`
