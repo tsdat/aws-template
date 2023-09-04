@@ -1,0 +1,17 @@
+#################################################################################
+# Image for a specific tsdat pipeline.  This image extends the base to add
+# the code for the specific pipeline.
+# 
+# The context for building this image should be the root of the pipelines
+# repository.
+#
+# ARGS:
+#     BASE_IMAGE_NAME: the base image to extend
+#     PIPELINE_NAME:   the name of the pipeline to include
+#################################################################################
+ARG BASE_IMAGE_NAME
+ARG PIPELINE_NAME
+
+FROM $BASE_IMAGE_NAME
+
+COPY pipelines/$PIPELINE_NAME pipelines/$PIPELINE_NAME

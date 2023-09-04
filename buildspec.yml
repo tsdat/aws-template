@@ -27,9 +27,8 @@ phases:
     commands:
       - echo Build started on `date`
       
-      # Run the build
-      - cd $CODEBUILD_SRC_DIR/cdk
-      - python -c "from build import PipelineBuild; PipelineBuild().build()"
+      # Run the build (we assume from $CODEBUILD_SRC_DIR)
+      - python -c "from code_build import TsdatPipelineBuild; TsdatPipelineBuild().build()"
     
   post_build:
     commands:

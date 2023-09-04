@@ -22,13 +22,13 @@ class PipelinesConfig():
         self.region = config.get('region')
         self.vpc_id = config.get('vpc_id')
         self.github_codestar_arn = config.get('github_codestar_arn')
+        self.pipelines_to_deploy: dict = config.get('pipelines_to_deploy')
       
 
     @staticmethod
     def get_config_file_path():
         utils_dir = os.path.dirname(os.path.realpath(__file__))
-        cdk_dir = os.path.dirname(utils_dir)
-        repo_dir = os.path.dirname(cdk_dir)
+        repo_dir = os.path.dirname(utils_dir)
         config_file_path = os.path.join(repo_dir, 'pipelines_config.yml')
         return config_file_path
 
