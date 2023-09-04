@@ -1,0 +1,32 @@
+#################################################################################
+# Base image for tsdat pipelines.  This image includes the core tsdat libraries
+# and is used for all individual pipeline images.
+# 
+# The context for building this image should be the root of the pipelines
+# repository.
+#################################################################################
+FROM public.ecr.aws/lambda/python:3.9
+
+# TODO: add conda base environment and pip install into conda
+
+# Install the dependent libraries.  This should install tsdat plus any 
+# pipeline-specific dependencies
+COPY requirements.txt .
+RUN python3.9 -m pip install -r requirements.txt --target .
+
+# Copy over all the shared code into the image
+COPY utils utils
+COPY shared shared
+COPY logger.py utils/
+COPY storage-extra.yaml shared/
+RUN cat shared/storage-extra.yaml >> shared/storage.yaml
+
+# Create an empty pipelines package (specific pipeline packages will be pulled over during the 
+# pipeline-specific build)
+RUN mkdir pipelines && touch pipelines/__init__.py
+
+COPY lambda_function.py .
+RUN chmod +x lambda_function.py
+
+# Default command is to run the lambda handler, but this can be overriden
+CMD ["lambda_function.lambda_handler"]

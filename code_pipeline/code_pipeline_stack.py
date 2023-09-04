@@ -27,13 +27,17 @@ class CodePipelineStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        self.config: PipelinesConfig = kwargs.get('config')
+        self.config: PipelinesConfig = PipelinesConfig()
+        
+        # TODO: Create the ECR repo
         
         # Create the code pipeline stack
         self.create_code_pipeline()
         
         # Create the input/output buckets
         self.create_buckets()
+        
+        # May need an sns topic for build alert messages
         
         
     def get_github_source(self, repo, output_name):

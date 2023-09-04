@@ -6,8 +6,23 @@ ARG AWS_CDK_VERSION=2.93.0
 RUN npm install -g aws-cdk@${AWS_CDK_VERSION}
 RUN apt update -y && apt install -y nano
 
-COPY cdk/requirements.txt /root/requirements.txt
+COPY requirements.txt /root/requirements.txt
 RUN pip install -r /root/requirements.txt
+
+# Install the aws cli
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/root/awscliv2.zip"
+RUN unzip /root/awscliv2.zip -d /root
+RUN /root/aws/install
+
+# AWS cli help doesn't work out of the box, so we have to add these 2 additional libs
+RUN apt-get install groff less -y
+
+# Also need to install the session manager plugin
+RUN curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "/root/session-manager-plugin.deb"
+RUN dpkg -i /root/session-manager-plugin.deb
+
+# Add the jq library for parsing aws cli output
+RUN apt-get install jq -y
 
 # This should be mounted to the repo in docker-compose.yml
 RUN mkdir /root/cdk_app
@@ -20,5 +35,3 @@ ENV AWS_PROFILE=tsdat
 # Make sure to mount our cdk app to /root/cdk_app
 
 WORKDIR /root/cdk_app
-
-CMD ["cdk", "--version"]

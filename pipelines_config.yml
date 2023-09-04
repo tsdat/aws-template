@@ -19,8 +19,8 @@ github_codestar_arn: FILL_ME_IN
 
 # Bucket names - must be unique across AWS!
 # Bucket names must be DNS-compliant. This means they should not contain underscores, end with a dash, have consecutive periods, or use dashes adjacent to periods.
-input_bucket_name: a2edap-tsdat-raw-data
-output_bucket_name: a2edap-tsdat-output
+input_bucket_name: buoy-raw-data
+output_bucket_name: buoy-output
 
 ###################################################################
 # Array of pipelines.  Each pipeline has the following properties:
