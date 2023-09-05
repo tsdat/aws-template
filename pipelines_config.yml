@@ -6,7 +6,7 @@
 # GitHub Repository (TODO: support repos being in 2 different orgs)
 github_org: carinatest
 pipelines_repo_name: ingest-buoy
-aws_repo_name: deploy
+aws_repo_name: aws-template
 
 # AWS Information
 account_id: "332883119153"
