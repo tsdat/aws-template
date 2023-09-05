@@ -1,7 +1,11 @@
 import os
 import shutil
 import subprocess
-from typing import List
+from typing import List, Optional
+
+import boto3
+from botocore.exceptions import ClientError
+
 from utils.constants import Env
 from utils.pipelines_config import PipelinesConfig
 
@@ -16,6 +20,7 @@ class TsdatPipelineBuild():
         Constructor
         ----------------------------------------------------------------------------------------"""
         self.config: PipelinesConfig = PipelinesConfig()
+        self.lambda_client = boto3.client('lambda', region_name=Env.AWS_DEFAULT_REGION)
         
     
     def find_changed_tsdat_pipelines(self) -> List[str]:
@@ -59,7 +64,7 @@ class TsdatPipelineBuild():
             source_file = os.path.join(source_folder, file)
             destination_file = os.path.join(destination_folder, file)
             shutil.copy(source_file, destination_file)
-           
+        
         self.build_image(Env.PIPELINES_REPO_NAME, 'Dockerfile.base')
         
     def build_pipeline_docker_image(self, pipeline_name: str):
@@ -83,27 +88,59 @@ class TsdatPipelineBuild():
             Exception: If the docker command fails
         ----------------------------------------------------------------------------------------"""
         # e.g., 809073466396.dkr.ecr.us-west-2.amazonaws.com/ingest-buoy-test
-        ecr_repo = f'{Env.AWS_ACCOUNT_ID}.dkr.ecr.{Env.AWS_DEFAULT_REGION}.amazonaws.com/{Env.PIPELINES_REPO_NAME}-{Env.BRANCH}'
+        ecr_repo = self.config.ecr_repo
         image_tag_name = f'{pipeline_name}-{Env.BRANCH}'
         image_uri = f'{ecr_repo}:{image_tag_name}'
         
+        base_image_tag_name = f'{Env.PIPELINES_REPO_NAME}-{Env.BRANCH}'
+        base_image_uri = f'{ecr_repo}:{base_image_tag_name}'
+        
         # Run the docker build command
         script_path = os.path.join(Env.AWS_REPO_PATH, 'code_build', 'build_docker.sh')
-        cmd = f'{script_path} {Env.PIPELINES_REPO_PATH} {dockerfile} {image_uri} {pipeline_name}'
+        cmd = f'{script_path} {Env.PIPELINES_REPO_PATH} {dockerfile} {image_uri} {base_image_uri} {pipeline_name}'
         proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, 
                               stderr=subprocess.PIPE, text=True)
         if proc.returncode != 0:
             raise Exception(f'Failed to run docker build: {proc.stderr}')
         
     def deploy_lambda(self, pipeline_name: str):
-        # Need to know input/output bucket names so we can set permissions
- 
-        # Look up the pipeline's config from the pipelines config file
-        # If this is a cron, then set schedule for the lambda job.  Probably need to set
-        # environment variable on the lambda to know it's cron or not.
+      
+        lambda_name = f'{pipeline_name}-{Env.BRANCH}'
+        lambda_fn = self.get_lambda(lambda_name)
         
-        # If S3, then add config to input bucket to trigger sns event on path
-        pass
+        if not lambda_fn:
+            # Create the lambda
+            # Add permissions to the lambda to exec and read/write to buckets
+            # Schedule the lambda if it's a cron
+            # Set up bucket event triggers if not cron
+            
+            pass
+        
+        else:
+            # We need to update the lambda's metadata
+            pass
+        
+    def get_lambda(self, function_name: str) -> Optional[dict]:
+        """----------------------------------------------------------------------------------------
+        Gets data about a Lambda function.
+
+        Args:
+            function_name (str): The name of the lambda function.
+
+        Raises:
+            Exception: If the lambda call fails.
+            
+        Returns:
+            dict: A dict with parameters about the lambda function
+        """
+        try:
+            return self.lambda_client.get_function(FunctionName=function_name)
+        
+        except ClientError as err:
+            if err.response['Error']['Code'] == 'ResourceNotFoundException':
+                return None
+            else:
+                raise
     
     def build(self):
         print(f'Building CodeBuild pipeline: {Env.CODEBUILD_PIPELINE_NAME}')

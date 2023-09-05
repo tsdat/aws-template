@@ -85,5 +85,20 @@ Do this from the VSCode window that is attached to the tsdat-cdk container.
 CDK requires that your AWS credentials be set in order to authenticate your CLI actions.
 From your VSCode window tha tis attached to the tsdat-cdk container
 
+### **8. Run the cdk bootstrap (Only need to do this the FIRST time you deploy)**
+``` 
+cd aws-template
+cdk bootstrap
+```
 
+### **9. Run the cdk build**
+You can re-run this for each branch you want to deploy (e.g., dev, prod, etc.) and any time
+you make changes to the stack (for example, you add a new permission to your lambda role).
 
+**NOTE: ** Most deployments will not need to change anything in the stack, but advanced users
+are free to customize.
+
+```
+cd aws-template
+./deploy_stack.sh $BRANCH   (where $BRANCH is the branch you want to deploy (e.g., dev/prod)
+```

@@ -3,24 +3,19 @@
 ###################################################################
 # Build Parameters
 ###################################################################
-# GitHub Repository
-github_org: a2edap
-pipelines_repo: buoy-pipelines
-aws_build_repo: buoy-deploy
+# GitHub Repository (TODO: support repos being in 2 different orgs)
+github_org: carinatest
+pipelines_repo_name: ingest-buoy
+aws_repo_name: deploy
 
 # AWS Information
-account_id: 332883119153
+account_id: "332883119153"
 region: us-west-2
 vpc_id: vpc-09ed7a9059ac5e392
 
 # Create a CodeStar connection to allow AWS to have access to your GitHub repositories
 # https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html
 github_codestar_arn: FILL_ME_IN  
-
-# Bucket names - must be unique across AWS!
-# Bucket names must be DNS-compliant. This means they should not contain underscores, end with a dash, have consecutive periods, or use dashes adjacent to periods.
-input_bucket_name: buoy-raw-data
-output_bucket_name: buoy-output
 
 ###################################################################
 # Array of pipelines.  Each pipeline has the following properties:
