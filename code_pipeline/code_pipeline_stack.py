@@ -1,6 +1,11 @@
+from typing import Optional
 from aws_cdk import (
     Stack,
-    Fn
+    RemovalPolicy,
+    aws_s3 as s3,
+    aws_ecr as ecr,
+    aws_lambda as _lambda,
+    aws_iam as iam
 )
 from aws_cdk.aws_codebuild import (
     PipelineProject,
@@ -24,20 +29,26 @@ from utils.constants import Env
 
 class CodePipelineStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, 
+                 config: Optional[PipelinesConfig], **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        self.config: PipelinesConfig = PipelinesConfig()
+        self.config: PipelinesConfig = config if config else PipelinesConfig()
         
-        # TODO: Create the ECR repo
+        # Create the ECR repo
+        self.create_ecr_repository()
         
-        # Create the code pipeline stack
-        self.create_code_pipeline()
+        # Create the code pipeline 
+        # self.create_code_pipeline()
         
         # Create the input/output buckets
         self.create_buckets()
         
-        # May need an sns topic for build alert messages
+        # Create a role that will be used to execute lambda functions that gives them
+        # read/write access to the input and output buckets
+        self.create_lambda_role()
+        
+        # TODO: May need an sns topic for build alert messages
         
         
     def get_github_source(self, repo, output_name):
@@ -58,7 +69,7 @@ class CodePipelineStack(Stack):
             repo=repo,
             output=output,
             connection_arn=self.config.github_codestar_arn,
-            branch=Env.DEPLOYMENT_NAME,
+            branch=Env.BRANCH,
             trigger_on_push=False,
         )
         return (output, action)
@@ -69,20 +80,19 @@ class CodePipelineStack(Stack):
         (pipelines & aws template) via a CodeStar connection.  Whenever one of these repos change,
         then depending upon the modified files, the appropriate pipelines will be deployed to AWS.
         Pipeline deployment involves:
-         1) creating the docker image for the pipeline & lambda functions
+         1) creating the docker images for the pipeline lambdas
          2) deploying the lambda function for the pipeline
-         3) if the trigger is cron, also deploying the lambda function for the cron
-         4) deploying sns event topics for the pipeline
-         5) if the trigger is s3, hooking up the topics to the right folder path
+         3) if the trigger is cron, set a schedule for the lambda
+         4) If the trigger is s3, create sns events to trigger lambda for the raw folder path
         """
-        deployment_name = Env.DEPLOYMENT_NAME
+        deployment_name = Env.BRANCH
 
         # Set up code sources used in the source stage of the code pipeline
-        pipelines_artifact, pipelines_source_action = self.get_github_source(self.config.pipelines_repo, 'pipelines')
-        aws_build_artifact, aws_build_source_action = self.get_github_source(self.config.aws_build_repo, 'aws_build')
+        pipelines_artifact, pipelines_source_action = self.get_github_source(self.config.pipelines_repo_name, 'pipelines')
+        aws_build_artifact, aws_build_source_action = self.get_github_source(self.config.aws_repo_name, 'aws_build')
         
         # Create a project to wrap the code pipeline and code build.  It will run from the aws-template repository.
-        project_name = f"{self.config.pipelines_repo}-build-{Env.DEPLOYMENT_NAME}"
+        project_name = self.config.code_pipeline_project_name
         build_project = PipelineProject(
             self,
             project_name,
@@ -96,13 +106,13 @@ class CodePipelineStack(Stack):
             environment_variables={
                 "AWS_ACCOUNT_ID": BuildEnvironmentVariable(value=self.config.account_id),
                 "AWS_DEFAULT_REGION": BuildEnvironmentVariable(value=self.config.region),
-                "PIPELINES_REPO_NAME":  BuildEnvironmentVariable(value=self.config.pipelines_repo),
+                "PIPELINES_REPO_NAME":  BuildEnvironmentVariable(value=self.config.pipelines_repo_name),
                 "CODEBUILD_PIPELINE_NAME": project_name,
-                "BRANCH": BuildEnvironmentVariable(value=Env.DEPLOYMENT_NAME),
+                "BRANCH": BuildEnvironmentVariable(value=Env.BRANCH),
             },
         )
 
-        # Give the pipeline the correct permissions to read/write images in Elastic Container Registry
+        # Give the pipeline the correct permissions to read/write any images in Elastic Container Registry
         build_project.add_to_role_policy(
             PolicyStatement(
                 effect=Effect.ALLOW,
@@ -147,7 +157,7 @@ class CodePipelineStack(Stack):
             cross_account_keys=False,
             stages=[
                 StageProps(
-                    stage_name=f"{Env.DEPLOYMENT_NAME}-source",
+                    stage_name=f"{Env.BRANCH}-source",
                     actions=[
                         aws_build_source_action,
                         pipelines_source_action
@@ -160,4 +170,61 @@ class CodePipelineStack(Stack):
         )  
         
     def create_buckets(self):
-        pass
+        
+        input_bucket = s3.Bucket(
+            self,
+            self.config.input_bucket_name,  # ID
+            bucket_name=self.config.input_bucket_name,
+            auto_delete_objects=True,                 # Remove bucket when stack is destroyed
+            removal_policy=RemovalPolicy.DESTROY
+
+        )
+        
+        output_bucket = s3.Bucket(
+            self,
+            self.config.output_bucket_name,  # ID
+            bucket_name=self.config.output_bucket_name,
+            auto_delete_objects=True,                 # Remove bucket when stack is destroyed
+            removal_policy=RemovalPolicy.DESTROY
+
+        )
+        return input_bucket, output_bucket
+        
+    def create_ecr_repository(self):
+               
+        ecr_repository = ecr.Repository(
+            self,
+            self.config.ecr_repo_name,
+            repository_name=self.config.ecr_repo_name,
+            removal_policy=RemovalPolicy.DESTROY, 
+        )
+        
+        # TODO: can we add tags to the repo?
+        
+    def create_lambda_role(self):
+        
+        # Create an IAM role for Lambda execution
+        lambda_role = iam.Role(
+            self,
+            self.config.lambda_role_name,
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            description="IAM role for Lambda execution with access to S3 buckets.",
+        )
+
+        # Attach a basic Lambda execution policy to the role
+        lambda_role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
+        )
+        
+        # Now add permissions to read and write to the input and output buckets
+        lambda_role.add_to_policy(
+            iam.PolicyStatement(
+                resources=[
+                    f'arn:aws:s3:::{self.config.input_bucket_name}/*',
+                    f'arn:aws:s3:::{self.config.output_bucket_name}/*'
+                ],
+                actions=['s3:*']
+            )
+        )
+
+        

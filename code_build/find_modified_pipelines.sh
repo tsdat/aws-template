@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 #####################################################################
 # Script Name:  find_modified_pipelines.sh
 # Description:  Script that uses git diff to find out which tsdat

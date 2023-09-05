@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../../.aws"
+		},
+		{
+			"path": "../../../usr/local/lib/python3.11/site-packages"
 		}
 	],
 	"settings": {
@@ -18,6 +21,7 @@
 		"window.title": "${rootName}${separator}${activeEditorShort}",
 		"python.analysis.logLevel": "Information",
 		"python.analysis.exclude": [
+			"/usr/local/lib/python3.11/site-packages",
 		],
 		"debug.toolBarLocation":"docked",
 		"workbench.colorCustomizations": {
