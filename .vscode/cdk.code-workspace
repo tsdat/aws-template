@@ -23,13 +23,20 @@
 		"python.analysis.exclude": [
 			"/usr/local/lib/python3.11/site-packages",
 		],
-		"debug.toolBarLocation":"docked",
+		"debug.toolBarLocation": "docked",
 		"workbench.colorCustomizations": {
 			"activityBar.background": "#53987c",
 			"titleBar.activeBackground": "#53987c",
 			"titleBar.activeForeground": "#FEFAFF",
 			"activityBar.activeBackground": "#fafafa"
 		},
+		"editor.formatOnSave": true,
+		"[python]": {
+			"editor.defaultFormatter": "ms-python.black-formatter"
+		},
+		"black-formatter.args": [
+			"--preview"
+		],
 	},
 	"extensions": {
 		"recommendations": [
@@ -44,7 +51,8 @@
 			"redhat.vscode-yaml",
 			"PKief.material-icon-theme",
 			"fabiospampinato.vscode-statusbar-debugger",
-			"canadaduane.notes"
+			"canadaduane.notes",
+			"ms-python.black-formatter"
 		]
 	},
 }
