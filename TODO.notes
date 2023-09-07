@@ -1,16 +1,12 @@
-# CodeStarConnection
-- Write a script to create this from the command line instead of using UI.  Can't create
-  via the CDK because it requires a manual approval step.
 
 # Lambda image
-- Should extend tsdat lambda base image
 - Need to add conda to base image to support VAPs
 
 # Pipelines Repo
 - Add protection to the release branch
 - Decide what default branch to use for dev
 
-# CDK Stack
+-->If user creates a repo from the template, will it inherit the branches?
 
 
 # Code Build
@@ -26,10 +22,17 @@ DataSync can be created via CDK or boto3 (TBD).
 rename code workspace file to tsdat-cdk
 
 # Testing Steps
-1. Create my forked repos in the carinatest org
-2. test script to create codestar CodeStarConnection
+1. Create my forked repos in the carinatest org DONE
+2. Create codestar CodeStarConnection DONE
 3. test adding code pipeline to the Stack
 4. test that the build will build the images correctly
 5. test creating lambda with file trigger by hand (including access to buckets and event trigger)
 6. test creating lambda with cron trigger by hand
 7. Add the create lambda function to the build
+
+# Maybe add create branches to the README Steps
+- See if branches are inherited from the template (they did not inherit when I forked).
+  If not, then add steps in the README to create the branches
+
+Do I have to add a web hook by hand in order for a commit to GitHub to trigger the
+AWS build?
