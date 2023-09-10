@@ -87,6 +87,12 @@ class PipelinesConfig:
     def ecr_repo(self):
         return f"{self.account_id}.dkr.ecr.{self.region}.amazonaws.com/{self.ecr_repo_name}"
 
+    def get_lambda_name(self, tsdat_pipeline_name: str):
+        return f"{self.base_name}-lambda-{tsdat_pipeline_name}"
+
+    def get_cron_rule_name(self, tsdat_pipeline_name: str):
+        return f"{self.get_lambda_name(tsdat_pipeline_name)}-cron-rule"
+
     @staticmethod
     def get_config_file_path():
         utils_dir = os.path.dirname(os.path.realpath(__file__))
