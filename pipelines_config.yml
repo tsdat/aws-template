@@ -42,6 +42,9 @@ github_codestar_arn: arn:aws:codestar-connections:us-east-2:332883119153:connect
 #
 #  schedule -   Schedule for cron triggers.  Can be hourly, daily,
 #               weekly, or monthly.  Only used if trigger is cron.
+#
+#  TODO:        We may want to add paramters for lambda timeout and
+#               memory if we need to customize them per pipeline
 ###################################################################
 pipelines_to_deploy:
   - name: lidar_humboldt
