@@ -31,7 +31,7 @@ phases:
       - echo Build started on `date`
 
       # Run the build (we assume from $CODEBUILD_SRC_DIR)
-      - python -c "from code_build import TsdatPipelineBuild; TsdatPipelineBuild().build()"
+      - python -c "from code_build.build import TsdatPipelineBuild; TsdatPipelineBuild().build()"
 
   post_build:
     commands:
