@@ -107,7 +107,7 @@ class CodePipelineStack(Stack):
             f"{project_name}-project",
             build_spec=BuildSpec.from_source_filename("buildspec.yml"),
             environment=BuildEnvironment(
-                build_image=LinuxBuildImage.AMAZON_LINUX_2_4,
+                build_image=LinuxBuildImage.AMAZON_LINUX_2_5,
                 compute_type=ComputeType.MEDIUM,
                 privileged=True,
             ),
