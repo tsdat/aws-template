@@ -74,7 +74,7 @@ class CodePipelineStack(Stack):
             output=output,
             connection_arn=self.config.github_codestar_arn,
             branch=Env.BRANCH,
-            trigger_on_push=False,
+            trigger_on_push=True,
         )
         return (output, action)
 
@@ -149,6 +149,7 @@ class CodePipelineStack(Stack):
                     "ecr:CompleteLayerUpload",
                     "ecr:PutImage",
                     "ecs:UpdateService",
+                    "codepipeline:ListPipelineExecutions",
                 ],
                 resources=["*"],
             )
