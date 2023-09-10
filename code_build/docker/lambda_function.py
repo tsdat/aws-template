@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 def download_s3_record(record: Dict, target_dir: Path) -> str:
     bucket_name = record["s3"]["bucket"]["name"]
     bucket_path = Path(unquote_plus(record["s3"]["object"]["key"]))
-    
+
     local_path = target_dir / bucket_path
     local_path.parent.mkdir(parents=True, exist_ok=True)
     local_path = str(local_path)
-    
+
     session = boto3.session.Session()
     bucket = session.resource("s3").Bucket(bucket_name)
     bucket.download_file(
@@ -78,7 +78,9 @@ def set_env_vars():
     os.environ["STORAGE_CLASSNAME"] = storage_classname
 
     try:
-        version = Path(".version").read_text().strip()  # Created by the Dockerfile via dunamai
+        version = (
+            Path(".version").read_text().strip()
+        )  # Created by the Dockerfile via dunamai
     except IOError:
         version = "N/A"
     os.environ["CODE_VERSION"] = os.environ.get("CODE_VERSION", version)
@@ -122,6 +124,18 @@ def lambda_handler(event, context):
         this context provides is specified by AWS here:
         https://docs.aws.amazon.com/lambda/latest/dg/python-context-object.html
     --------------------------------------------------------------------------------"""
+    # TODO: Code build should have set env vars to for the process type
+    # (Ingest or VAP) and the pipeline name.  If VAP, then we need to open the
+    # pipeline's retriever config file to find the input datastreams.  Then we
+    # need to get the last modified date of the latest output file.  Then we
+    # check the dates of the input datastream files.  Any file that was modified
+    # after the last output file is a candidate for running the VAP.  We take the
+    # day range of the available input files, and those are the days we run the VAP
+    # for.
+
+    # For ingests, we can simplify this code.  Since we know the pipeline name,
+    # we don't really need the pipeline registry dispatch crap.  We just
+    # invoke the pipeline with the given files.
 
     set_env_vars()
     configure_logger(logger)
@@ -140,16 +154,21 @@ def lambda_handler(event, context):
             discovered = sorted(list(cache._cache))
             logger.info(f"Discovered pipelines: {discovered}")
             assert len(discovered) >= 1, "Lambda environment was configured incorrectly"
-            
+
             config_files = cache._match_input_key(input_files[0])
-            assert len(config_files) > 0, f"No config files were matched by the input_file '{input_files[0]}'"
-            assert len(config_files) == 1, f"Multiple config files were matched by input_file '{input_files[0]}': {config_files}"
+            assert (
+                len(config_files) > 0
+            ), f"No config files were matched by the input_file '{input_files[0]}'"
+            assert len(config_files) == 1, (
+                f"Multiple config files were matched by input_file '{input_files[0]}':"
+                f" {config_files}"
+            )
             config_file = config_files[0]
 
             # Record information for extra context
             mapping_name = str(config_file)
             successes, failures, skipped = cache.dispatch(input_files, clump=True)
-        
+
         success = successes >= 1 and failures == 0
 
     except BaseException:
@@ -161,7 +180,7 @@ def lambda_handler(event, context):
             "success": success,
             "input_files": input_files,
             "short_input_files": get_shortened_input_files(input_files),
-            "code_version": os.environ.get("CODE_VERSION", "")
+            "code_version": os.environ.get("CODE_VERSION", ""),
             # "environment": get_sanitized_env_dict(),
             # "event": event,
         }
@@ -173,7 +192,7 @@ def lambda_handler(event, context):
     return not success  # Convert successful exit codes to 0
 
 
-#if __name__ == "__main__":
+# if __name__ == "__main__":
 #    from pathlib import Path
 
 #    event_file = Path("event.json")

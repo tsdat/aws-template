@@ -18,7 +18,7 @@ base_image_uri="$4"
 pipeline_name="$5"
 
 # First perform docker login into our ecr repository
-aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin  $AWS_ACCOUNT_ID
+# aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin  $AWS_ACCOUNT_ID
 
 # Build the image and push to ECR
 cd ${context_folder}

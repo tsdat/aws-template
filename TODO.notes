@@ -1,6 +1,4 @@
 
-# Lambda image
-- Need to add conda to base image to support VAPs
 
 # Pipelines Repo
 - Add protection to the release branch
@@ -24,7 +22,7 @@ rename code workspace file to tsdat-cdk
 # Testing Steps
 1. Create my forked repos in the carinatest org DONE
 2. Create codestar CodeStarConnection DONE
-3. test adding code pipeline to the Stack
+3. test adding code pipeline to the Stack DONE
 4. test that the build will build the images correctly
 5. test creating lambda with file trigger by hand (including access to buckets and event trigger)
 6. test creating lambda with cron trigger by hand
