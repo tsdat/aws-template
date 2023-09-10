@@ -37,7 +37,7 @@ class TsdatPipelineBuild:
         changed_pipelines = []
         command = (
             f"cd {Env.PIPELINES_REPO_PATH} &&"
-            f" {Env.AWS_REPO_PATH}/cdk/build/find_modified_pipelines.sh"
+            f" {Env.AWS_REPO_PATH}/code_build/find_modified_pipelines.sh"
         )
 
         completed_process = subprocess.run(
