@@ -7,12 +7,23 @@
 #################################################################################
 FROM public.ecr.aws/lambda/python:3.9
 
-# TODO: add conda base environment and pip install into conda
-
-# Install the dependent libraries.  This should install tsdat plus any 
-# pipeline-specific dependencies
+# Copy the python dependencies
 COPY requirements.txt .
-RUN python3.9 -m pip install -r requirements.txt --target .
+COPY environment.yml .
+
+# Install Conda and create tsdat environment
+RUN yum update -y && yum install -y wget && yum clean all
+
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh && sh Miniconda3-latest-Linux-x86_64.sh -b -p /opt/miniconda
+
+RUN /opt/miniconda/bin/conda env create --file environment.yml --prefix /opt/conda-env
+
+RUN /opt/conda-env/bin/pip install awslambdaric
+
+# We now replace the image’s existing Python with Python from the conda environment:
+RUN mv /var/lang/bin/python3.9 /var/lang/bin/python3.9-clean && ln -sf /opt/conda-env/bin/python /var/lang/bin/python3.9
+RUN mv /var/lang/bin/pip3 /var/lang/bin/pip3-old && ln -sf /opt/conda-env/bin/pip /var/lang/bin/pip3
+
 
 # Copy over all the shared code into the image
 COPY utils utils
@@ -21,12 +32,15 @@ COPY logger.py utils/
 COPY storage-extra.yaml shared/
 RUN cat shared/storage-extra.yaml >> shared/storage.yaml
 
-# Create an empty pipelines package (specific pipeline packages will be pulled over during the 
-# pipeline-specific build)
+# Create an empty pipelines package (specific pipeline packages will be pulled over 
+# during the pipeline-specific build)
 RUN mkdir pipelines && touch pipelines/__init__.py
 
 COPY lambda_function.py .
 RUN chmod +x lambda_function.py
 
-# Default command is to run the lambda handler, but this can be overriden
+# Default entrypoint from parent image is this:
+#ENTRYPOINT ["/lambda-entrypoint.sh"]
+
+# Default command is to run the lambda handler
 CMD ["lambda_function.lambda_handler"]
