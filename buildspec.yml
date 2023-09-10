@@ -1,16 +1,15 @@
 version: 0.2
 
-# Buildspec comes from the aws_build primary source artifact.  
-    # Path is stored in the built-in environment variable $CODEBUILD_SRC_DIR
+# Buildspec comes from the aws_build primary source artifact.
+# Path is stored in the built-in environment variable $CODEBUILD_SRC_DIR
 
 # Pipelines repo is the secondary source artifact.
-    # Path is stored in environment variable $CODEBUILD_SRC_DIR_pipelines (i.e., $CODEBUILD_SRC_DIR_<InputArtifactName>)
+# Path is stored in environment variable $CODEBUILD_SRC_DIR_pipelines (i.e., $CODEBUILD_SRC_DIR_<InputArtifactName>)
 
 # Per https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-env-vars.html
-    # use $CODEBUILD_INITIATOR as it provides the unique entity that started the build
+# use $CODEBUILD_INITIATOR as it provides the unique entity that started the build
 
 phases:
-
   install:
     runtime-versions:
       python: 3.11
@@ -21,15 +20,17 @@ phases:
   pre_build:
     commands:
       - echo "Logging in to Amazon ECR..."
-      - $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin  $AWS_ACCOUNT_ID
+      - echo "Identifying trigger..."
+      - aws codepipeline list-pipeline-executions --pipeline $AWS_PIPELINE_NAME
 
   build:
     commands:
       - echo Build started on `date`
-      
+
       # Run the build (we assume from $CODEBUILD_SRC_DIR)
       - python -c "from code_build import TsdatPipelineBuild; TsdatPipelineBuild().build()"
-    
+
   post_build:
     commands:
       - echo Build completed on `date`

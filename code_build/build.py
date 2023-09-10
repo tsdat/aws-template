@@ -128,6 +128,10 @@ class TsdatPipelineBuild:
 
         if not lambda_fn:
             # Create the lambda
+
+            # Env vars needed:
+            # process type (Ingest or VAP)
+            # pipeline name
             # Add permissions to the lambda to exec and read/write to buckets
             # Schedule the lambda if it's a cron
             # Set up bucket event triggers if not cron
