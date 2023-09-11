@@ -9,6 +9,8 @@ from pathlib import Path
 
 import boto3
 
+from utils.pipelines_config import PipelinesConfig, PipelineConfig
+from utils.constants import Type, Trigger
 from utils.registry import PipelineRegistry
 from utils.logger import configure_logger, DelayedJSONStreamHandler
 
@@ -124,67 +126,87 @@ def lambda_handler(event, context):
         this context provides is specified by AWS here:
         https://docs.aws.amazon.com/lambda/latest/dg/python-context-object.html
     --------------------------------------------------------------------------------"""
-    # TODO: Code build should have set env vars to for the process type
-    # (Ingest or VAP) and the pipeline name.  If VAP, then we need to open the
-    # pipeline's retriever config file to find the input datastreams.  Then we
-    # need to get the last modified date of the latest output file.  Then we
-    # check the dates of the input datastream files.  Any file that was modified
-    # after the last output file is a candidate for running the VAP.  We take the
-    # day range of the available input files, and those are the days we run the VAP
-    # for.
+    # This is passed to the lambda configuration via the build
+    pipeline_name = os.environ.get("PIPELINE_NAME")
 
-    # For ingests, we can simplify this code.  Since we know the pipeline name,
-    # we don't really need the pipeline registry dispatch crap.  We just
-    # invoke the pipeline with the given files.
+    # Load the pipelines config file
+    pipeline_config: PipelineConfig = PipelinesConfig().pipelines.get(pipeline_name)
 
     set_env_vars()
     configure_logger(logger)
-
+    extra_context = {}
     success = False
-    mapping_name = ""
-    pipeline_info: Dict = {}
-    input_files = []
 
     try:
-        with get_input_files_from_event(event) as input_files:
-            logger.info(f"Running on input files: {input_files}")
-            assert len(input_files) >= 1, "No input files found!"
+        if pipeline_config.type == Type.VAP:
+            # TODO: If VAP, then we need to open the
+            # pipeline's retriever config file to find the input datastreams.  Then we
+            # need to get the last modified date of the latest output file.  Then we
+            # check the dates of the input datastream files.  Any file that was modified
+            # after the last output file is a candidate for running the VAP.  We take the
+            # day range of the available input files, and those are the days we run the VAP
+            # for.
+            pass
 
-            cache = PipelineRegistry()
-            discovered = sorted(list(cache._cache))
-            logger.info(f"Discovered pipelines: {discovered}")
-            assert len(discovered) >= 1, "Lambda environment was configured incorrectly"
+        elif pipeline_config.trigger == Trigger.Cron:
+            # For cron ingests, we need to find all the files that have changed in the
+            # input folder since the last output file date.  Note that we need to find
+            # the set of files for each location, and then invoke the pipeline separately
+            # for each location.
+            pass
 
-            config_files = cache._match_input_key(input_files[0])
-            assert (
-                len(config_files) > 0
-            ), f"No config files were matched by the input_file '{input_files[0]}'"
-            assert len(config_files) == 1, (
-                f"Multiple config files were matched by input_file '{input_files[0]}':"
-                f" {config_files}"
-            )
-            config_file = config_files[0]
+        else:
+            # This is the traditional old way of doing ingests
+            mapping_name = ""
+            pipeline_info: Dict = {}
+            input_files = []
 
-            # Record information for extra context
-            mapping_name = str(config_file)
-            successes, failures, skipped = cache.dispatch(input_files, clump=True)
+            try:
+                with get_input_files_from_event(event) as input_files:
+                    logger.info(f"Running on input files: {input_files}")
+                    assert len(input_files) >= 1, "No input files found!"
 
-        success = successes >= 1 and failures == 0
+                    cache = PipelineRegistry()
+                    discovered = sorted(list(cache._cache))
+                    logger.info(f"Discovered pipelines: {discovered}")
+                    assert (
+                        len(discovered) >= 1
+                    ), "Lambda environment was configured incorrectly"
 
-    except BaseException:
-        logger.exception("Failed to run the pipeline.")
+                    config_files = cache._match_input_key(input_files[0])
+                    assert len(config_files) > 0, (
+                        "No config files were matched by the input_file"
+                        f" '{input_files[0]}'"
+                    )
+                    assert len(config_files) == 1, (
+                        "Multiple config files were matched by input_file"
+                        f" '{input_files[0]}': {config_files}"
+                    )
+                    config_file = config_files[0]
+
+                    # Record information for extra context
+                    mapping_name = str(config_file)
+                    successes, failures, skipped = cache.dispatch(
+                        input_files, clump=True
+                    )
+
+                success = successes >= 1 and failures == 0
+
+            except BaseException:
+                logger.exception("Failed to run the pipeline.")
+
+            finally:
+                extra_context = {
+                    "mapping_name": mapping_name,
+                    "success": success,
+                    "input_files": input_files,
+                    "short_input_files": get_shortened_input_files(input_files),
+                    "code_version": os.environ.get("CODE_VERSION", ""),
+                    # "environment": get_sanitized_env_dict(),
+                    # "event": event,
+                }
 
     finally:
-        extra_context = {
-            "mapping_name": mapping_name,
-            "success": success,
-            "input_files": input_files,
-            "short_input_files": get_shortened_input_files(input_files),
-            "code_version": os.environ.get("CODE_VERSION", ""),
-            # "environment": get_sanitized_env_dict(),
-            # "event": event,
-        }
-
         for handler in logging.getLogger().handlers:
             if isinstance(handler, DelayedJSONStreamHandler):
                 handler.flush(context=extra_context)
