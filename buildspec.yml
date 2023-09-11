@@ -26,8 +26,7 @@ phases:
 
       # Trigger will be "StartPipelineExecution" or "Webhook"
       - echo "Identifying trigger..."
-      - echo "pipline name = $AWS_PIPELINE_NAME"
-      - echo "ID = $ID"
+      - env
       - export TRIGGER=$(aws codepipeline list-pipeline-executions --pipeline $AWS_PIPELINE_NAME | jq -r ".pipelineExecutionSummaries[]|select(.pipelineExecutionId==\"$ID\")|.trigger.triggerType")
       - echo "Trigger = $TRIGGER"
 
