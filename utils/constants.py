@@ -26,3 +26,15 @@ class Env:
 
     LAMBDA_ROLE_ARN = os.environ.get("LAMBDA_ROLE_ARN")
     TRIGGER = os.environ.get("TRIGGER")
+
+
+class Trigger:
+    S3 = "S3"
+    Cron = "Cron"
+
+
+class Schedule:
+    Hourly = "Hourly"
+    Daily = "Daily"
+    Weekly = "Weekly"
+    Monthly = "Monthly"

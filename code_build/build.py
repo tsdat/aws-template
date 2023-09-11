@@ -113,12 +113,13 @@ class TsdatPipelineBuild:
             Exception: If the docker command fails
 
         """
-        print(f"Building image {pipeline_name} with file {dockerfile} ...")
 
         # e.g., 809073466396.dkr.ecr.us-west-2.amazonaws.com/ingest-buoy-test
         ecr_repo = self.config.ecr_repo
         image_tag_name = f"{pipeline_name}-{Env.BRANCH}"
         image_uri = f"{ecr_repo}:{image_tag_name}"
+
+        print(f"Building image {image_tag_name} with file {dockerfile} ...")
 
         base_image_tag_name = f"{Env.PIPELINES_REPO_NAME}-{Env.BRANCH}"
         base_image_uri = f"{ecr_repo}:{base_image_tag_name}"

@@ -32,7 +32,7 @@ github_codestar_arn: arn:aws:codestar-connections:us-east-2:332883119153:connect
 #                      where the Tsdat pipeline config file is
 #                      located
 #
-#   trigger -   What will trigger the pipelien.  Can be S3 or cron.
+#   trigger -   What will trigger the pipelien.  Can be S3 or Cron.
 #               S3 means a trigger from new files in the input
 #               bucket.  Cron means a trigger from a cron scheduled
 #               lambda.  Most of the time, Ingest pipelines will
@@ -40,8 +40,8 @@ github_codestar_arn: arn:aws:codestar-connections:us-east-2:332883119153:connect
 #               need to be processed together.  VAP pipelines
 #               must always use cron.
 #
-#  schedule -   Schedule for cron triggers.  Can be hourly, daily,
-#               weekly, or monthly.  Only used if trigger is cron.
+#  schedule -   Schedule for cron triggers.  Can be Hourly, Daily,
+#               Weekly, or Monthly.  Only used if trigger is cron.
 #
 #  TODO:        We may want to add paramters for lambda timeout and
 #               memory if we need to customize them per pipeline
@@ -62,5 +62,5 @@ pipelines_to_deploy:
   # - name: vap1_humboldt
   #   type: VAP
   #   config_file_path: pipelines/lidar/config/pipeline_morro.yaml
-  #   trigger: cron
-  #   schedule: daily
+  #   trigger: Cron
+  #   schedule: Daily
