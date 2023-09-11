@@ -40,18 +40,18 @@ class CodePipelineStack(Stack):
 
         self.config: PipelinesConfig = config if config else PipelinesConfig()
 
-        # Create the ECR repo
-        self.create_ecr_repository()
-
-        # Create the code pipeline
-        self.create_code_pipeline()
-
         # Create the input/output buckets
         self.create_buckets()
 
         # Create a role that will be used to execute lambda functions that gives them
         # read/write access to the input and output buckets
-        self.create_lambda_role()
+        lambda_role_arn = self.create_lambda_role()
+
+        # Create the ECR repo
+        self.create_ecr_repository()
+
+        # Create the code pipeline
+        self.create_code_pipeline(lambda_role_arn)
 
         # TODO: May need an sns topic for build alert messages
 
@@ -78,7 +78,7 @@ class CodePipelineStack(Stack):
         )
         return (output, action)
 
-    def create_code_pipeline(self):
+    def create_code_pipeline(self, lambda_role_arn):
         """Create the code pipeline in AWS.
         This pipeline sets up an automated build that is connected to the two GitHub repositories
         (pipelines & aws template) via a CodeStar connection.  Whenever one of these repos change,
@@ -124,6 +124,7 @@ class CodePipelineStack(Stack):
                 ),
                 "AWS_PIPELINE_NAME": BuildEnvironmentVariable(value=pipeline_name),
                 "BRANCH": BuildEnvironmentVariable(value=Env.BRANCH),
+                "LAMBDA_ROLE_ARN": lambda_role_arn,
             },
         )
 
@@ -210,7 +211,7 @@ class CodePipelineStack(Stack):
 
         # TODO: can we add tags to the repo?
 
-    def create_lambda_role(self):
+    def create_lambda_role(self) -> str:
         # Create an IAM role for Lambda execution
         lambda_role = iam.Role(
             self,
@@ -236,3 +237,5 @@ class CodePipelineStack(Stack):
                 actions=["s3:*"],
             )
         )
+        # TODO return the arn of the role
+        return lambda_role.role_arn
