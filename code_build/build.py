@@ -11,9 +11,20 @@ from utils.pipelines_config import PipelinesConfig
 
 
 class TsdatPipelineBuild:
-    # I think this build runs from the $CODEBUILD_SRC_DIR folder because that is the
-    # location of the buildspec.yml file.
-    # Pipelines repo is located at env $CODEBUILD_SRC_DIR_pipelines
+    """TsdatPipelineBuild
+
+    This build will run in CodePipeline from the $CODEBUILD_SRC_DIR folder, which
+    is where the buildspec.yml file is located.  The other source repo (for the
+    tsdat pipelines) will be in the $CODEBUILD_SRC_DIR_pipelines folder.
+
+    All of the resource names, which can be derived from the account and region,
+    will come from the PipelinesConfig object.  However, since the arns are
+    dynamic, in cases where we have to pass an arn of an object that was
+    created with the cdk stack, then the cdk stack will pass these arns to the
+    build environment via an environment parameter.  These parameters can be
+    accessed via the constants.Env object.
+
+    """
 
     def __init__(self):
         """Constructor"""
@@ -102,6 +113,8 @@ class TsdatPipelineBuild:
             Exception: If the docker command fails
 
         """
+        print(f"Building image{pipeline_name} with file {dockerfile} ...")
+
         # e.g., 809073466396.dkr.ecr.us-west-2.amazonaws.com/ingest-buoy-test
         ecr_repo = self.config.ecr_repo
         image_tag_name = f"{pipeline_name}-{Env.BRANCH}"
@@ -163,17 +176,32 @@ class TsdatPipelineBuild:
             if err.response["Error"]["Code"] == "ResourceNotFoundException":
                 return None
             else:
-                raise
+                raise err
 
     def build(self):
         print(f"Building CodeBuild pipeline: {Env.AWS_PIPELINE_NAME}")
 
         # Step 1:  Build the base image.
         # All the pipelines from the same repo share the same base image
+        print("Building base image...")
         self.build_base_image()
 
-        # Step 2: Build the pipelines whose code changed
-        tsdat_pipelines_to_build = self.find_changed_tsdat_pipelines()
+        # Step 2: Build the pipeline images.
+
+        # Get the trigger, one of two types: "StartPipelineExecution" or "Webhook"
+        trigger = Env.TRIGGER
+        print(f"Build trigger is {trigger}")
+
+        if trigger == "StartPipelineExecution":
+            print("This was a manual trigger, so we build all the pipelines.")
+            tsdat_pipelines_to_build = [p.name for p in self.config.pipelines_to_deploy]
+        else:
+            # This was a code trigger, only build the pipelines that changed
+            print(
+                "This was a webhook trigger, so we build only pipelines that changed."
+            )
+            tsdat_pipelines_to_build = self.find_changed_tsdat_pipelines()
+
         for tsdat_pipeline_name in tsdat_pipelines_to_build:
             print(f"Building Tsdat pipeline: {tsdat_pipeline_name}")
             self.build_pipeline_docker_image(tsdat_pipeline_name)
