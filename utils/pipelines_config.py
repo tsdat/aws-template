@@ -33,11 +33,13 @@ class PipelinesConfig:
         self.region = config.get("region")
         self.github_codestar_arn = config.get("github_codestar_arn")
 
-        self.pipelines: Dict[str, PipelineConfig] = {}
+        self.pipelines: Dict[str, List[PipelineConfig]] = {}
         pipelines_to_deploy: List[dict] = config.get("pipelines_to_deploy", [])
         for p in pipelines_to_deploy:
             name = p["name"]
-            self.pipelines[name] = PipelineConfig(p)
+            if name not in self.pipelines:
+                self.pipelines[name] = []
+            self.pipelines[name].append(PipelineConfig(p))
 
     @property
     def base_name(self):
@@ -94,6 +96,12 @@ class PipelinesConfig:
 
     def get_cron_rule_name(self, tsdat_pipeline_name: str):
         return f"{self.get_lambda_name(tsdat_pipeline_name)}-cron-rule"
+
+    def get_image_tag(self, tsdat_pipeline_name: str):
+        return f"{tsdat_pipeline_name}-{Env.BRANCH}"
+
+    def get_image_uri(self, tsdat_pipeline_name: str):
+        return f"{self.ecr_repo}:{self.get_image_tag(tsdat_pipeline_name)}"
 
     @staticmethod
     def get_config_file_path():

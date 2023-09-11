@@ -115,14 +115,10 @@ class TsdatPipelineBuild:
         """
 
         # e.g., 809073466396.dkr.ecr.us-west-2.amazonaws.com/ingest-buoy-test
-        ecr_repo = self.config.ecr_repo
-        image_tag_name = f"{pipeline_name}-{Env.BRANCH}"
-        image_uri = f"{ecr_repo}:{image_tag_name}"
-
+        image_tag_name = self.config.get_image_tag(pipeline_name)
+        image_uri = self.config.get_image_uri(pipeline_name)
+        base_image_uri = self.config.get_image_url(Env.PIPELINES_REPO_NAME)
         print(f"Building image {image_tag_name} with file {dockerfile} ...")
-
-        base_image_tag_name = f"{Env.PIPELINES_REPO_NAME}-{Env.BRANCH}"
-        base_image_uri = f"{ecr_repo}:{base_image_tag_name}"
 
         # Run the docker build command
         script_path = os.path.join(Env.AWS_REPO_PATH, "code_build", "build_docker.sh")
