@@ -117,7 +117,7 @@ class TsdatPipelineBuild:
         # e.g., 809073466396.dkr.ecr.us-west-2.amazonaws.com/ingest-buoy-test
         image_tag_name = self.config.get_image_tag(pipeline_name)
         image_uri = self.config.get_image_uri(pipeline_name)
-        base_image_uri = self.config.get_image_url(Env.PIPELINES_REPO_NAME)
+        base_image_uri = self.config.get_image_uri(Env.PIPELINES_REPO_NAME)
         print(f"Building image {image_tag_name} with file {dockerfile} ...")
 
         # Run the docker build command
