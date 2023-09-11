@@ -124,6 +124,7 @@ class CodePipelineStack(Stack):
                 ),
                 "AWS_PIPELINE_NAME": BuildEnvironmentVariable(value=pipeline_name),
                 "BRANCH": BuildEnvironmentVariable(value=Env.BRANCH),
+                # This ARN is not one we can dynamically determine, so we have to pass it in
                 "LAMBDA_ROLE_ARN": BuildEnvironmentVariable(value=lambda_role_arn),
             },
         )

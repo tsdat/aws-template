@@ -36,8 +36,12 @@ RUN cat shared/storage-extra.yaml >> shared/storage.yaml
 # during the pipeline-specific build)
 RUN mkdir pipelines && touch pipelines/__init__.py
 
+# Copy our lambda function
 COPY lambda_function.py .
 RUN chmod +x lambda_function.py
+
+# Copy the pipelines config file
+COPY pipelines_config.yml .
 
 # Default entrypoint from parent image is this:
 #ENTRYPOINT ["/lambda-entrypoint.sh"]

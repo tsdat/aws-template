@@ -89,6 +89,11 @@ class TsdatPipelineBuild:
             destination_file = os.path.join(destination_folder, file)
             shutil.copy(source_file, destination_file)
 
+        # We also need to copy over the pipelines config file
+        source_file = os.path.join(Env.AWS_REPO_PATH, "pipelines_config.yml")
+        dest_file = os.path.join(destination_folder, "pipelines_config.yml")
+        shutil.copy(source_file, dest_file)
+
         self.build_image(Env.PIPELINES_REPO_NAME, "Dockerfile.base")
 
     def build_pipeline_docker_image(self, pipeline_name: str):
