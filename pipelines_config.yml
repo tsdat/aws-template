@@ -59,8 +59,8 @@ pipelines_to_deploy:
     config_file_path: pipelines/lidar/config/pipeline_morro.yaml
     trigger: S3
 
-  - name: vap1_humboldt
-    type: VAP
-    config_file_path: pipelines/lidar/config/pipeline_morro.yaml
-    trigger: cron
-    schedule: daily
+  # - name: vap1_humboldt
+  #   type: VAP
+  #   config_file_path: pipelines/lidar/config/pipeline_morro.yaml
+  #   trigger: cron
+  #   schedule: daily

@@ -23,3 +23,6 @@ class Env:
 
     AWS_ACCOUNT_ID = os.environ.get("AWS_ACCOUNT_ID")
     AWS_DEFAULT_REGION = os.environ.get("AWS_DEFAULT_REGION")
+
+    LAMBDA_ROLE_ARN = os.environ.get("LAMBDA_ROLE_ARN")
+    TRIGGER = os.environ.get("TRIGGER")

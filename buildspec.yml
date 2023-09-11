@@ -20,11 +20,13 @@ phases:
   pre_build:
     commands:
       - export PYTHONPATH=$CODEBUILD_SRC_DIR
+
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
 
+      # Trigger will be "StartPipelineExecution" or "Webhook"
       - echo "Identifying trigger..."
-      - aws codepipeline list-pipeline-executions --pipeline $AWS_PIPELINE_NAME
+      - export TRIGGER=$(aws codepipeline list-pipeline-executions --pipeline $PIPELINE_NAME | jq -r ".pipelineExecutionSummaries[]|select(.pipelineExecutionId==\"$ID\")|.trigger.triggerType")
 
   build:
     commands:
