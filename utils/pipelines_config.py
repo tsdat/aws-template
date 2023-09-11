@@ -46,10 +46,11 @@ class PipelinesConfig:
         self.region = config.get("region")
         self.github_codestar_arn = config.get("github_codestar_arn")
 
-        self.pipelines_to_deploy: List[PipelineConfig] = []
+        self.pipelines: Dict[str, PipelineConfig] = {}
         pipelines_to_deploy: List[dict] = config.get("pipelines_to_deploy", [])
-        for pipeline_dict in pipelines_to_deploy:
-            self.pipelines_to_deploy.append(PipelineConfig(pipeline_dict))
+        for p in pipelines_to_deploy:
+            name = p["name"]
+            self.pipelines[name] = PipelineConfig(p)
 
     @property
     def base_name(self):
@@ -89,6 +90,7 @@ class PipelinesConfig:
         return f"{self.account_id}.dkr.ecr.{self.region}.amazonaws.com/{self.ecr_repo_name}"
 
     def get_image_uri(self, tsdat_pipeline_name: str):
+        # "332883119153.dkr.ecr.us-west-2.amazonaws.com/ingest-buoy-dev:ingest-buoy-dev"
         image_tag_name = f"{tsdat_pipeline_name}-{Env.BRANCH}"
         return f"{self.ecr_repo}:{image_tag_name}"
 

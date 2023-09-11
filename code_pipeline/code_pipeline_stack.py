@@ -124,7 +124,7 @@ class CodePipelineStack(Stack):
                 ),
                 "AWS_PIPELINE_NAME": BuildEnvironmentVariable(value=pipeline_name),
                 "BRANCH": BuildEnvironmentVariable(value=Env.BRANCH),
-                "LAMBDA_ROLE_ARN": lambda_role_arn,
+                "LAMBDA_ROLE_ARN": BuildEnvironmentVariable(value=lambda_role_arn),
             },
         )
 
