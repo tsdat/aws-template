@@ -3,7 +3,13 @@ from pathlib import Path
 from typing import Dict, List, Union
 import yaml
 
-from .constants import Env
+from .constants import Env, Schedule
+
+
+class LocationConfig:
+    def __init__(self, values: dict):
+        self.name = values.get("name")
+        self.config_file_path = values.get("config_file_path")
 
 
 class PipelineConfig:
@@ -11,9 +17,34 @@ class PipelineConfig:
         self.name: str = values.get("name")
         self.type: str = values.get("type")
         self.input_prefix: str = values.get("input_prefix")
-        self.config_file_path: str = values.get("config_file_path")
         self.trigger: str = values.get("trigger")
         self.schedule: str = values.get("schedule")
+
+        self.locations: Dict[str, LocationConfig] = {}
+        locations: List[dict] = values.get("locations", [])
+        for location_dict in locations:
+            name = location_dict["name"]
+            self.locations[name] = LocationConfig(location_dict)
+
+    @property
+    def cron_expression(self):
+        # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
+        # cron(Minutes Hours Day-of-month Month Day-of-week Year)
+
+        if self.schedule == Schedule.Hourly:
+            return "cron(0 0/1 * * ? *)"
+
+        elif self.schedule == Schedule.Weekly:
+            # 2 am on the first day of the week
+            return "cron(0 2 ? * 1 *)"
+
+        elif self.schedule == Schedule.Monthly:
+            # 2 am on the first day of the month
+            return "cron(0 2 1 * ? *)"
+
+        else:  # Daily is default if not specified
+            # 2 am daily
+            return "cron(0 2 * * ? *)"
 
 
 class PipelinesConfig:
@@ -33,13 +64,11 @@ class PipelinesConfig:
         self.region = config.get("region")
         self.github_codestar_arn = config.get("github_codestar_arn")
 
-        self.pipelines: Dict[str, List[PipelineConfig]] = {}
+        self.pipelines: Dict[str, PipelineConfig] = {}
         pipelines_to_deploy: List[dict] = config.get("pipelines_to_deploy", [])
         for p in pipelines_to_deploy:
             name = p["name"]
-            if name not in self.pipelines:
-                self.pipelines[name] = []
-            self.pipelines[name].append(PipelineConfig(p))
+            self.pipelines[name] = PipelineConfig(p)
 
     @property
     def base_name(self):
@@ -82,10 +111,13 @@ class PipelinesConfig:
         # 332883119153.dkr.ecr.us-west-2.amazonaws.com/ingest-buoy-dev
         return f"{self.account_id}.dkr.ecr.{self.region}.amazonaws.com/{self.ecr_repo_name}"
 
+    def get_image_tag(self, tsdat_pipeline_name: str):
+        # e.g., lidar-dev
+        return f"{tsdat_pipeline_name}-{Env.BRANCH}"
+
     def get_image_uri(self, tsdat_pipeline_name: str):
-        # "332883119153.dkr.ecr.us-west-2.amazonaws.com/ingest-buoy-dev:ingest-buoy-dev"
-        image_tag_name = f"{tsdat_pipeline_name}-{Env.BRANCH}"
-        return f"{self.ecr_repo}:{image_tag_name}"
+        # e.g., 332883119153.dkr.ecr.us-west-2.amazonaws.com/ingest-buoy-dev:lidar-dev
+        return f"{self.ecr_repo}:{self.get_image_tag(tsdat_pipeline_name)}"
 
     def get_lambda_name(self, tsdat_pipeline_name: str):
         return f"{self.base_name}-lambda-{tsdat_pipeline_name}"
@@ -96,12 +128,6 @@ class PipelinesConfig:
 
     def get_cron_rule_name(self, tsdat_pipeline_name: str):
         return f"{self.get_lambda_name(tsdat_pipeline_name)}-cron-rule"
-
-    def get_image_tag(self, tsdat_pipeline_name: str):
-        return f"{tsdat_pipeline_name}-{Env.BRANCH}"
-
-    def get_image_uri(self, tsdat_pipeline_name: str):
-        return f"{self.ecr_repo}:{self.get_image_tag(tsdat_pipeline_name)}"
 
     @staticmethod
     def get_config_file_path():

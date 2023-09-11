@@ -21,14 +21,7 @@ github_codestar_arn: arn:aws:codestar-connections:us-east-2:332883119153:connect
 #
 #   name -      Name of the pipeline.
 #
-#   location -  Location where this pipeline runs.  $name_$location
-#               will be used to name several AWS resources.
-#
 #   type -      Ingest or VAP
-#
-#   config_file_path - Relative path from the pipelines_repository
-#                      where the Tsdat pipeline config file is
-#                      located
 #
 #   trigger -   What will trigger the pipelien.  Can be S3 or Cron.
 #               S3 means a trigger from new files in the input
@@ -45,27 +38,32 @@ github_codestar_arn: arn:aws:codestar-connections:us-east-2:332883119153:connect
 #  schedule -   Schedule for cron triggers.  Can be Hourly, Daily,
 #               Weekly, or Monthly.  Only used if trigger is cron.
 #
+#   locations -  Locations where this pipeline runs.
+#
+#                name - name of the location
+#
+#                config_file_path - Relative path from the
+#                      pipelines_repository where the Tsdat pipeline
+#                      config file is located
+#
 #  TODO:        We may want to add paramters for lambda timeout and
 #               memory if we need to customize them per pipeline
 ###################################################################
 pipelines_to_deploy:
   - name: lidar
-    location: humbolt
     type: Ingest
-    config_file_path: pipelines/lidar/config/pipeline_humboldt.yaml
     trigger: S3
-    input_prefix: lidar/humboldt
-
-  - name: lidar
-    location: morro
-    type: Ingest
-    config_file_path: pipelines/lidar/config/pipeline_morro.yaml
-    trigger: S3
-    input_prefix: lidar/morro
+    input_prefix: lidar
+    locations:
+      - name: humbolt
+        config_file_path: pipelines/lidar/config/pipeline_humboldt.yaml
+      - name: morro
+        config_file_path: pipelines/lidar/config/pipeline_morro.yaml
 
   # - name: vap1
-  #   location: morro
   #   type: VAP
-  #   config_file_path: pipelines/lidar/config/pipeline_morro.yaml
   #   trigger: Cron
   #   schedule: Daily
+  #   locations:
+  #     - name: morro
+  #       config_file_path: pipelines/lidar/config/pipeline_morro.yaml
