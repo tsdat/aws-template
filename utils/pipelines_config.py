@@ -7,26 +7,13 @@ from .constants import Env
 
 
 class PipelineConfig:
-    class Type:
-        INGEST = "Ingest"
-        VAP = "VAP"
-
-    class Trigger:
-        S3 = "S3"
-        CRON = "cron"
-
-    class Schedule:
-        HOURLY = "hourly"
-        DAILY = "daily"
-        WEEKLY = "weekly"
-        MONTHLY = "monthly"
-
     def __init__(self, values: dict):
-        self.name = values.get("name")
-        self.type = values.get("type")
-        self.input_dir = values.get("input_dir")
-        self.config_file_path = values.get("config_file_path")
-        self.trigger = values.get("triger")
+        self.name: str = values.get("name")
+        self.type: str = values.get("type")
+        self.input_dir: str = values.get("input_dir")
+        self.config_file_path: str = values.get("config_file_path")
+        self.trigger: str = values.get("trigger")
+        self.schedule: str = values.get("schedule")
 
 
 class PipelinesConfig:

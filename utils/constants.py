@@ -28,6 +28,11 @@ class Env:
     TRIGGER = os.environ.get("TRIGGER")
 
 
+class Type:
+    Ingest = "Ingest"
+    Vap = "VAP"
+
+
 class Trigger:
     S3 = "S3"
     Cron = "Cron"
