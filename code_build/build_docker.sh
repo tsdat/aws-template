@@ -22,5 +22,5 @@ pipeline_name="$5"
 
 # Build the image and push to ECR
 cd ${context_folder}
-docker build --build-arg PIPELINE_NAME=$pipeline_name --build-arg IMAGE_NAME=$base_image_uri -t $image_uri -f $dockerfile .
+docker build --build-arg PIPELINE_NAME=$pipeline_name --build-arg BASE_IMAGE_NAME=$base_image_uri -t $image_uri -f $dockerfile .
 docker push $image_uri

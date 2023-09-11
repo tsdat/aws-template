@@ -24,9 +24,9 @@ github_codestar_arn: arn:aws:codestar-connections:us-east-2:332883119153:connect
 #
 #   type -      Ingest or VAP
 #
-#   input_dir - Path where input files for this pipeline will be
-#               uploaded. Path is relative to input bucket.
-#               Only used for Ingest pipelines.
+#   input_prefix - Relative path from the root of the input S3 bucket
+#                  where input files for this pipeline will be
+#                  uploaded. Only used for Ingest pipelines.
 #
 #   config_file_path - Relative path from the pipelines_repository
 #                      where the Tsdat pipeline config file is
@@ -49,13 +49,13 @@ github_codestar_arn: arn:aws:codestar-connections:us-east-2:332883119153:connect
 pipelines_to_deploy:
   - name: lidar_humboldt
     type: Ingest
-    input_dir: lidar/humboldt
+    input_prefix: lidar/humboldt
     config_file_path: pipelines/lidar/config/pipeline_humboldt.yaml
     trigger: S3
 
   - name: lidar_morro
     type: Ingest
-    input_dir: lidar/morro
+    input_prefix: lidar/morro
     config_file_path: pipelines/lidar/config/pipeline_morro.yaml
     trigger: S3
 

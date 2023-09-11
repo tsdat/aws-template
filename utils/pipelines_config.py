@@ -10,7 +10,7 @@ class PipelineConfig:
     def __init__(self, values: dict):
         self.name: str = values.get("name")
         self.type: str = values.get("type")
-        self.input_dir: str = values.get("input_dir")
+        self.input_prefix: str = values.get("input_prefix")
         self.config_file_path: str = values.get("config_file_path")
         self.trigger: str = values.get("trigger")
         self.schedule: str = values.get("schedule")
@@ -64,6 +64,10 @@ class PipelinesConfig:
         return f"{self.base_name}-raw"
 
     @property
+    def input_bucket_arn(self):
+        return f"arn:aws:s3:::{self.input_bucket_name}"
+
+    @property
     def output_bucket_name(self):
         return f"{self.base_name}-output"
 
@@ -83,6 +87,10 @@ class PipelinesConfig:
 
     def get_lambda_name(self, tsdat_pipeline_name: str):
         return f"{self.base_name}-lambda-{tsdat_pipeline_name}"
+
+    def get_lambda_arn(self, tsdat_pipeline_name: str):
+        # f'arn:aws:lambda:{YOUR_REGION}:{YOUR_ACCOUNT_ID}:function:{lambda_function_name}'
+        return f"arn:aws:lambda:{self.region}:{self.account_id}:function:{self.get_lambda_name(tsdat_pipeline_name)}"
 
     def get_cron_rule_name(self, tsdat_pipeline_name: str):
         return f"{self.get_lambda_name(tsdat_pipeline_name)}-cron-rule"
