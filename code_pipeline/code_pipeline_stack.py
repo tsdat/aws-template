@@ -151,6 +151,7 @@ class CodePipelineStack(Stack):
                     "ecr:PutImage",
                     "ecs:UpdateService",
                     "codepipeline:ListPipelineExecutions",
+                    "codepipeline:GetPipelineState",
                 ],
                 resources=["*"],
             )
@@ -237,5 +238,5 @@ class CodePipelineStack(Stack):
                 actions=["s3:*"],
             )
         )
-        # TODO return the arn of the role
+        # return the arn of the role
         return lambda_role.role_arn
