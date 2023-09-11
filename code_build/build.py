@@ -113,7 +113,7 @@ class TsdatPipelineBuild:
             Exception: If the docker command fails
 
         """
-        print(f"Building image{pipeline_name} with file {dockerfile} ...")
+        print(f"Building image {pipeline_name} with file {dockerfile} ...")
 
         # e.g., 809073466396.dkr.ecr.us-west-2.amazonaws.com/ingest-buoy-test
         ecr_repo = self.config.ecr_repo
@@ -194,7 +194,7 @@ class TsdatPipelineBuild:
 
         if trigger == "StartPipelineExecution":
             print("This was a manual trigger, so we build all the pipelines.")
-            tsdat_pipelines_to_build = [p.name for p in self.config.pipelines_to_deploy]
+            tsdat_pipelines_to_build = list(self.config.pipelines.keys())
         else:
             # This was a code trigger, only build the pipelines that changed
             print(
