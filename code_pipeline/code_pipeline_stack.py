@@ -152,6 +152,7 @@ class CodePipelineStack(Stack):
                     "ecs:UpdateService",
                     "codepipeline:ListPipelineExecutions",
                     "codepipeline:GetPipelineState",
+                    "lambda:GetFunction",
                 ],
                 resources=["*"],
             )

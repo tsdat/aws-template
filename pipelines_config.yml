@@ -19,14 +19,12 @@ github_codestar_arn: arn:aws:codestar-connections:us-east-2:332883119153:connect
 ###################################################################
 # Array of pipelines.  Each pipeline has the following properties:
 #
-#   name -      Name of the pipeline.  Name will be used to create sns
-#               topic.
+#   name -      Name of the pipeline.
+#
+#   location -  Location where this pipeline runs.  $name_$location
+#               will be used to name several AWS resources.
 #
 #   type -      Ingest or VAP
-#
-#   input_prefix - Relative path from the root of the input S3 bucket
-#                  where input files for this pipeline will be
-#                  uploaded. Only used for Ingest pipelines.
 #
 #   config_file_path - Relative path from the pipelines_repository
 #                      where the Tsdat pipeline config file is
@@ -40,6 +38,10 @@ github_codestar_arn: arn:aws:codestar-connections:us-east-2:332883119153:connect
 #               need to be processed together.  VAP pipelines
 #               must always use cron.
 #
+#   input_prefix - Relative path from the root of the input S3 bucket
+#                  where input files for this pipeline will be
+#                  uploaded. Only used for Ingest pipelines.
+#
 #  schedule -   Schedule for cron triggers.  Can be Hourly, Daily,
 #               Weekly, or Monthly.  Only used if trigger is cron.
 #
@@ -47,19 +49,22 @@ github_codestar_arn: arn:aws:codestar-connections:us-east-2:332883119153:connect
 #               memory if we need to customize them per pipeline
 ###################################################################
 pipelines_to_deploy:
-  - name: lidar_humboldt
+  - name: lidar
+    location: humbolt
     type: Ingest
-    input_prefix: lidar/humboldt
     config_file_path: pipelines/lidar/config/pipeline_humboldt.yaml
     trigger: S3
+    input_prefix: lidar/humboldt
 
-  - name: lidar_morro
+  - name: lidar
+    location: morro
     type: Ingest
-    input_prefix: lidar/morro
     config_file_path: pipelines/lidar/config/pipeline_morro.yaml
     trigger: S3
+    input_prefix: lidar/morro
 
-  # - name: vap1_humboldt
+  # - name: vap1
+  #   location: morro
   #   type: VAP
   #   config_file_path: pipelines/lidar/config/pipeline_morro.yaml
   #   trigger: Cron
