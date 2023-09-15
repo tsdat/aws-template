@@ -85,7 +85,7 @@ Do this from the VSCode window that is attached to the tsdat-cdk container.
 
 **Don't forget to copy the ARN of your CodeStar Connection** 
 
-### **7. Configure your AWS profiles (one time only)**
+### **7. Configure your tsdat AWS profile (one time only)**
 tsdat profile:
 ```
 root@tsdat-cdk:~/cdk_app# aws configure --profile tsdat
@@ -95,44 +95,10 @@ Default region name [None]: us-west-2
 Default output format [None]: 
 ```
 
-tsdat sso profile:
-```
-root@tsdat-cdk:~/cdk_app# aws configure sso --profile tsdat
-SSO session name (Recommended): tsdat
-SSO start URL [None]: https://pnnl.awsapps.com/start
-SSO region [None]: us-west-2
-SSO registration scopes [sso:account:access]:
-Attempting to automatically open the SSO authorization page in your default browser.
-If the browser does not open or you wish to use a different device to authorize this request, open the following URL:
-
-https://device.sso.us-west-2.amazonaws.com/
-
-Then enter the code:
-
-NCGP-GDLD
-There are 4 AWS accounts available to you.
-Using the account ID 332883119153
-There are 2 roles available to you.
-Using the role name "AdministratorAccess"
-CLI default client Region [us-west-2]:
-CLI default output format [None]:
-
-To use this profile, specify the profile name using --profile, as shown:
-
-aws s3 ls --profile tsdat
-```
-
 Your ~/.aws/config file should look like this:
 ```
 [profile tsdat]
 region = us-west-2
-sso_session = tsdat
-sso_account_id = xxxxxxxxxxx
-sso_role_name = AdministratorAccess
-[sso-session tsdat]
-sso_start_url = https://pnnl.awsapps.com/start
-sso_region = us-west-2
-sso_registration_scopes = sso:account:access
 ```
 
 ### **7. Edit your aws credentials**

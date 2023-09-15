@@ -3,7 +3,11 @@ import os
 
 class Env:
     """This class contains a mixture of environment variables used in the CDK deploy as well as in the
-    aws code build.
+    aws code build.  Some are passed to the build environment by the stack.  Some are
+    set in the buildspec.yml pre-build stage.  Some are set when invoking the cdk build.
+
+    TODO: maybe clean these up so we don't have variables like AWS_ACCOUNT_ID provided
+    as both environment vars and in the pipelines config file.
     """
 
     # The branch of the pipelines repository that is being deployed (i.e., release, test, etc.)

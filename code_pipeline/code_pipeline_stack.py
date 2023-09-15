@@ -67,6 +67,19 @@ class CodePipelineStack(Stack):
             Tuple(Artifact, CodeStarConnectionsSourceAction):
         """
         output = Artifact(artifact_name=output_name)
+
+        # TODO: See if we can use this instead:
+        """
+            git_hub_source = codebuild.Source.git_hub(
+            owner="awslabs",
+            repo="aws-cdk",
+            webhook=True,  # optional, default: true if `webhookFilters` were provided, false otherwise
+            webhook_triggers_batch_build=True,  # optional, default is false
+            webhook_filters=[
+                codebuild.FilterGroup.in_event_of(codebuild.EventAction.PUSH).and_branch_is("main").and_commit_message_is("the commit message")
+            ]
+        )
+        """
         action = CodeStarConnectionsSourceAction(
             action_name=f"{repo}-source-action",
             owner=self.config.github_org,
@@ -154,6 +167,9 @@ class CodePipelineStack(Stack):
                     "codepipeline:ListPipelineExecutions",
                     "codepipeline:GetPipelineState",
                     "lambda:GetFunction",
+                    "s3:PutObject",
+                    "s3:PutBucketNotification",
+                    "s3:GetBucketNotification",
                 ],
                 resources=["*"],
             )

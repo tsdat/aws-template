@@ -6,9 +6,10 @@ import yaml
 from .constants import Env, Schedule
 
 
-class LocationConfig:
-    def __init__(self, values: dict):
-        self.name = values.get("name")
+class RunConfig:
+    def __init__(self, run_id: str, values: dict):
+        self.id = run_id
+        self.input_bucket_path = values.get("input_bucket_path")
         self.config_file_path = values.get("config_file_path")
 
 
@@ -20,11 +21,10 @@ class PipelineConfig:
         self.trigger: str = values.get("trigger")
         self.schedule: str = values.get("schedule")
 
-        self.locations: Dict[str, LocationConfig] = {}
-        locations: List[dict] = values.get("locations", [])
-        for location_dict in locations:
-            name = location_dict["name"]
-            self.locations[name] = LocationConfig(location_dict)
+        self.runs: Dict[str, RunConfig] = {}
+        runs: dict = values.get("runs", {})
+        for run_id, run in runs.items():
+            self.runs[run_id] = RunConfig(run_id, run)
 
     @property
     def cron_expression(self):
@@ -65,7 +65,7 @@ class PipelinesConfig:
         self.github_codestar_arn = config.get("github_codestar_arn")
 
         self.pipelines: Dict[str, PipelineConfig] = {}
-        pipelines_to_deploy: List[dict] = config.get("pipelines_to_deploy", [])
+        pipelines_to_deploy: List[dict] = config.get("pipelines", [])
         for p in pipelines_to_deploy:
             name = p["name"]
             self.pipelines[name] = PipelineConfig(p)
@@ -126,8 +126,8 @@ class PipelinesConfig:
         # f'arn:aws:lambda:{YOUR_REGION}:{YOUR_ACCOUNT_ID}:function:{lambda_function_name}'
         return f"arn:aws:lambda:{self.region}:{self.account_id}:function:{self.get_lambda_name(tsdat_pipeline_name)}"
 
-    def get_cron_rule_name(self, tsdat_pipeline_name: str):
-        return f"{self.get_lambda_name(tsdat_pipeline_name)}-cron-rule"
+    def get_cron_rule_name(self, tsdat_pipeline_name: str, run_name: str):
+        return f"{self.get_lambda_name(tsdat_pipeline_name)}-{run_name}-cron-rule"
 
     @staticmethod
     def get_config_file_path():

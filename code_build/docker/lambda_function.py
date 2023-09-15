@@ -149,10 +149,17 @@ def lambda_handler(event, context):
             pass
 
         elif pipeline_config.trigger == Trigger.Cron:
-            # For cron ingests, we need to find all the files that have changed in the
-            # input folder since the last output file date.  Note that we need to find
-            # the set of files for each location, and then invoke the pipeline separately
-            # for each location.
+            # For cron ingests, the event should have the run id passed in the input.
+            # We need to parse out the run id from the event and then look it up in the
+            # PipelineConfig.  From there we can find the input bucket and the prefix
+            # path.
+
+            # Next we need to find the last modified output file for that pipeline
+            # config from tsdat.
+
+            # Then we need to query the input bucket/prefix for all files modified since
+            # last output time.  Then we run the pipeline same as below.
+
             pass
 
         else:
