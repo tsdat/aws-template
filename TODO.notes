@@ -34,3 +34,23 @@ rename code workspace file to tsdat-cdk
 
 Do I have to add a web hook by hand in order for a commit to GitHub to trigger the
 AWS build?
+
+# Lambda Function
+- Fix lambda logging.  See if I can override this in the lambda container so we aren't 
+logging for every log statement in the code.
+
+- Add last modified functions to FileStorageS3
+
+- Take out the code that tries to get the config file from the cache, since we can look
+up the config file from our build pipelines config object.
+
+                    config = PipelineConfig.from_yaml(config_file)
+                    pipeline = config.instantiate_pipeline()
+                    inputs = input_keys if clump else [input_key]
+                    pipeline.run(inputs)
+
+- Figure out event structure for S3 and cron events and then parse the events properly
+to pull out the right parameters.
+
+
+# Code Build webook filters  
