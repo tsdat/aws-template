@@ -21,10 +21,10 @@ class PipelineConfig:
         self.trigger: str = values.get("trigger")
         self.schedule: str = values.get("schedule")
 
-        self.runs: Dict[str, RunConfig] = {}
-        runs: dict = values.get("runs", {})
-        for run_id, run in runs.items():
-            self.runs[run_id] = RunConfig(run_id, run)
+        self.configs: Dict[str, RunConfig] = {}
+        configs: dict = values.get("configs", {})
+        for run_id, run in configs.items():
+            self.configs[run_id] = RunConfig(run_id, run)
 
     @property
     def cron_expression(self):
@@ -126,8 +126,11 @@ class PipelinesConfig:
         # f'arn:aws:lambda:{YOUR_REGION}:{YOUR_ACCOUNT_ID}:function:{lambda_function_name}'
         return f"arn:aws:lambda:{self.region}:{self.account_id}:function:{self.get_lambda_name(tsdat_pipeline_name)}"
 
-    def get_cron_rule_name(self, tsdat_pipeline_name: str, run_name: str):
-        return f"{self.get_lambda_name(tsdat_pipeline_name)}-{run_name}-cron-rule"
+    def get_cron_rule_name(self, tsdat_pipeline_name: str, config_id: str):
+        return f"{self.get_lambda_name(tsdat_pipeline_name)}-{config_id}-cron-rule"
+
+    def get_bucket_notification_id(self, tsdat_pipeline_name):
+        return f"{self.get_lambda_name(tsdat_pipeline_name)}-s3-notification"
 
     @staticmethod
     def get_config_file_path():

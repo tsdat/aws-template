@@ -113,6 +113,11 @@ def get_shortened_input_files(files: List[str]) -> List[str]:
 
 
 def lambda_handler(event, context):
+    logger.info(event)
+    logger.info(context)
+
+
+def lambda_handler_old(event, context):
     """--------------------------------------------------------------------------------
     Lambda function to run a tsdat pipeline. The function will be triggered by an SNS
     event for an incoming raw data file. The pipeline will process the raw file using
@@ -129,6 +134,10 @@ def lambda_handler(event, context):
     # This is passed to the lambda configuration via the build
     pipeline_name = os.environ.get("PIPELINE_NAME")
 
+    # TODO: check the event to see if it is a cron event - we have to parse it differently
+    # {"config_id": config_id}
+    # If it's our cron format, then we can get the config_id from the event.
+
     # Load the pipelines config file
     pipeline_config: PipelineConfig = PipelinesConfig().pipelines.get(pipeline_name)
 
@@ -136,6 +145,9 @@ def lambda_handler(event, context):
     configure_logger(logger)
     extra_context = {}
     success = False
+
+    # Tsdat TODO:
+    # 1) How can we get the last modified date for a datastream in output bucket?
 
     try:
         if pipeline_config.type == Type.VAP:

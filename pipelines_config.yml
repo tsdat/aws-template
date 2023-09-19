@@ -38,7 +38,7 @@ github_codestar_arn: arn:aws:codestar-connections:us-east-2:332883119153:connect
 #  schedule -  Schedule for cron triggers.  Can be Hourly, Daily,
 #              Weekly, or Monthly.  Only used if trigger is cron.
 #
-#   runs    -  Instances where this pipeline should run on a unique
+#  configs  -  Instances where this pipeline should run on a unique
 #              set of files..
 #
 #                key - run id
@@ -61,7 +61,7 @@ pipelines:
     trigger: S3
     input_prefix: lidar
 
-    runs: # TODO: change to configs
+    configs:
       humbolt:
         input_bucket_path: lidar/humbolt/
         config_file_path: pipelines/lidar/config/pipeline_humboldt.yaml
@@ -77,6 +77,6 @@ pipelines:
   #   type: VAP
   #   trigger: Cron
   #   schedule: Daily
-  #   runs:
+  #   configs:
   #     morro:
   #       config_file_path: pipelines/lidar/config/pipeline_morro.yaml
