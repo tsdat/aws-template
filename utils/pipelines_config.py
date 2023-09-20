@@ -118,18 +118,26 @@ class PipelinesConfig:
         # e.g., 332883119153.dkr.ecr.us-west-2.amazonaws.com/ingest-buoy-dev:lidar-dev
         return f"{self.ecr_repo}:{self.get_image_tag(tsdat_pipeline_name)}"
 
-    def get_lambda_name(self, tsdat_pipeline_name: str):
-        return f"{self.base_name}-lambda-{tsdat_pipeline_name}"
+    def get_lambda_name(self, tsdat_pipeline_name: str, config_id: str):
+        return f"{self.base_name}-lambda-{tsdat_pipeline_name}-{config_id}"
 
-    def get_lambda_arn(self, tsdat_pipeline_name: str):
+    def get_lambda_arn(self, tsdat_pipeline_name: str, config_id: str):
         # f'arn:aws:lambda:{YOUR_REGION}:{YOUR_ACCOUNT_ID}:function:{lambda_function_name}'
-        return f"arn:aws:lambda:{self.region}:{self.account_id}:function:{self.get_lambda_name(tsdat_pipeline_name)}"
+        return (
+            f"arn:aws:lambda:{self.region}:{self.account_id}:function:{self.get_lambda_name(tsdat_pipeline_name, config_id)}"
+        )
 
     def get_cron_rule_name(self, tsdat_pipeline_name: str, config_id: str):
-        return f"{self.get_lambda_name(tsdat_pipeline_name)}-{config_id}-cron-rule"
+        return f"{self.get_lambda_name(tsdat_pipeline_name, config_id)}-cron-rule"
 
-    def get_bucket_notification_id(self, tsdat_pipeline_name):
-        return f"{self.get_lambda_name(tsdat_pipeline_name)}-s3-notification"
+    def get_bucket_notification_id(self, tsdat_pipeline_name: str, config_id: str):
+        return f"{self.get_lambda_name(tsdat_pipeline_name, config_id)}-s3-notification"
+
+    def get_bucket_trigger_statement_id(self, tsdat_pipeline_name: str, config_id: str):
+        return f"{self.get_lambda_name(tsdat_pipeline_name, config_id)}-s3-policy"
+
+    def get_cron_trigger_statement_id(self, tsdat_pipeline_name: str, config_id: str):
+        return f"{self.get_lambda_name(tsdat_pipeline_name, config_id)}-cron-policy"
 
     @staticmethod
     def get_config_file_path():
