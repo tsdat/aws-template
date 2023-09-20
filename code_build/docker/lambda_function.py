@@ -141,6 +141,7 @@ def lambda_handler_old(event, context):
     trigger = TriggerEvent(event)
     pipelines_config: PipelinesConfig = PipelinesConfig()
     pipeline_config: PipelineConfig = pipelines_config.pipelines.get(pipeline_name)
+    
     set_env_vars()
     configure_logger(logger)
     extra_context = {}
@@ -155,22 +156,24 @@ def lambda_handler_old(event, context):
         # we can split into non-contiguous segments to improve processing.
         pass
     
-    elif trigger.type == Trigger.Cron and pipeline_config.type == PipelineType.Ingest:
-        input_bucket_arn = pipelines_config.input_bucket_arn
-        pipeline_prefix = pipeline_config.input_prefix
-        run_config: RunConfig = pipeline_config.configs.get(trigger.config_id)
-        run_prefix = run_config.input_bucket_path
+    elif pipeline_config.type == PipelineType.Ingest:
         
-        # For cron ingests, the event should have the run id passed in the input.
-        # We need to parse out the run id from the event and then look it up in the
-        # PipelineConfig.  From there we can find the input bucket and the prefix
-        # path.
+        if trigger.type == Trigger.Cron:
+            input_bucket_arn = pipelines_config.input_bucket_arn
+            run_config: RunConfig = pipeline_config.configs.get(trigger.config_id)
+            bucket_path = run_config.input_bucket_path
+            
+            # We need to find the last modified date for this pipeline's output datastream.
 
-        # Next we need to find the last modified output file for that pipeline
-        # config from tsdat.
-
-        # Then we need to query the input bucket/prefix for all files modified since
-        # last output time.  Then we run the pipeline same as below.
+            # Then we need to query the input bucket/prefix for all files modified since
+            # last output time.  Then we run the pipeline same as below.
+    
+        else:
+            # config = PipelineConfig.from_yaml(config_file)
+            # pipeline = config.instantiate_pipeline()
+            # inputs = input_keys if clump else [input_key]
+            # pipeline.run(inputs)
+            pass
 
     try:
         
