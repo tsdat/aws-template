@@ -7,7 +7,7 @@ from typing import List, Optional
 import boto3
 from botocore.exceptions import ClientError
 
-from utils.constants import Env, Type, Trigger, Schedule
+from utils.constants import Env, PipelineType, Trigger, Schedule
 from utils.pipelines_config import PipelinesConfig, PipelineConfig, RunConfig
 
 
@@ -242,9 +242,11 @@ class TsdatPipelineBuild:
         try:
             lambda_arn = self.config.get_lambda_arn(tsdat_pipeline_name)
             policy = self.lambda_client.get_policy(FunctionName=lambda_arn)
+            print(f"lambda policy is: {policy}")
+            print(f"type of policy is {type(policy)}")
         except:
             return False
-        return "S3InputBucketInvokeLambda" in policy["Policy"]
+        return "S3InputBucketInvokeLambda" in policy["Policy"] 
 
     def add_or_update_s3_trigger(self, tsdat_pipeline_name):
         """

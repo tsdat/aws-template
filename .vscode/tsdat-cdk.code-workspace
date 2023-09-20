@@ -8,6 +8,12 @@
 		},
 		{
 			"path": "../../../usr/local/lib/python3.11/site-packages"
+		},
+		{
+			"path": "../../pipeline-template"
+		},
+		{
+			"path": "../../tsdat"
 		}
 	],
 	"settings": {
