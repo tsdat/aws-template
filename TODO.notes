@@ -53,4 +53,9 @@ up the config file from our build pipelines config object.
 to pull out the right parameters.
 
 
+# Refactor Build
+Let's create one lambda function per pipeline/config so we can pass in the config_id
+as an environment variable.  Then we can also make sure that each lambda is only 
+triggered by files from the right subpath.
+
 # Code Build webhook filters  

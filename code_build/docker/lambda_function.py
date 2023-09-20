@@ -1,7 +1,6 @@
 import logging
 import os
 import json
-import contextlib
 import tempfile
 from typing import Dict, List, Generator
 from urllib.parse import unquote_plus
@@ -17,13 +16,37 @@ from utils.logger import configure_logger, DelayedJSONStreamHandler
 
 logger = logging.getLogger(__name__)
 
-class TriggerEvent():
-    def __init__(self, aws_event):
+class EventTrigger():
+    def __init__(self, aws_event, pipeline_config: PipelineConfig):
         # TODO: parse the aws event and determine if this is a cron or s3 trigger
         self.type = Trigger.S3
-        self.input_files: List[str] = []  # parsed if this is s3 event
-        self.config_id: str = None  # parsed if this is cron event
+        self.input_files = None
+        self.pipeline_config = pipeline_config
+        
+        if self.type == Trigger.S3:
+            self.input_files: List[str] = self.get_input_files_from_event(aws_event)
+        else:
+            self.config_id: str = None  # parsed if this is cron event
 
+    def get_input_files_from_event(self, event) -> List[str]:
+        tmp_dir = tempfile.TemporaryDirectory()
+        tmp_dirpath = Path(tmp_dir.name)
+
+        input_files: List[str] = []
+        sns = json.loads(event["Records"][0]["Sns"]["Message"])
+        for record in sns["Records"]:
+            record_path = download_s3_record(json.loads(record), tmp_dirpath)
+            input_files.append(record_path)
+      
+        return input_files
+    
+    def get_config_id_from_event(self, event):
+        return ''
+    
+    def get_config_id_from_files(self):
+        # This might not work if files from different paths got uploaded in same event.
+        # Could this happen?
+        return ''
 
 def download_s3_record(record: Dict, target_dir: Path) -> str:
     bucket_name = record["s3"]["bucket"]["name"]
@@ -40,21 +63,6 @@ def download_s3_record(record: Dict, target_dir: Path) -> str:
         Filename=local_path,
     )
     return local_path
-
-
-@contextlib.contextmanager
-def get_input_files_from_event(event) -> Generator[List[str], None, None]:
-    tmp_dir = tempfile.TemporaryDirectory()
-    tmp_dirpath = Path(tmp_dir.name)
-
-    input_files: List[str] = []
-    sns = json.loads(event["Records"][0]["Sns"]["Message"])
-    for record in sns["Records"]:
-        record_path = download_s3_record(json.loads(record), tmp_dirpath)
-        input_files.append(record_path)
-    yield input_files
-
-    tmp_dir.cleanup()
 
 
 def set_env_vars():
@@ -114,9 +122,6 @@ def lambda_handler(event, context):
     logger.info(event)
     logger.info(context)
 
-def get_trigger(event) -> Tuple[]:
-    # Parse the event and determine if it is a cron or an s3 trigger
-    return False
 
 def lambda_handler_old(event, context):
     """--------------------------------------------------------------------------------
@@ -138,7 +143,7 @@ def lambda_handler_old(event, context):
     --------------------------------------------------------------------------------"""
     # This is passed to the lambda configuration via the build
     pipeline_name = os.environ.get("PIPELINE_NAME")
-    trigger = TriggerEvent(event)
+    trigger = EventTrigger(event)
     pipelines_config: PipelinesConfig = PipelinesConfig()
     pipeline_config: PipelineConfig = pipelines_config.pipelines.get(pipeline_name)
     
@@ -147,111 +152,66 @@ def lambda_handler_old(event, context):
     extra_context = {}
     success = False
     
-    if trigger.type == Trigger.Cron and pipeline_config.type == PipelineType.VAP:
-        # Open pipeline's retriever config file to find the input datastreams.  Then we
-        # need to find the last datetime the pipeline was run (we assume this is the last
-        # modified date of the pipeline output).  Then we find the data dates of any files
-        # that were modified after that datetime.  We will run the VAP for any days
-        # that were changed/added.  For now we will run the full range of days.  Later
-        # we can split into non-contiguous segments to improve processing.
-        pass
-    
-    elif pipeline_config.type == PipelineType.Ingest:
-        
-        if trigger.type == Trigger.Cron:
-            input_bucket_arn = pipelines_config.input_bucket_arn
-            run_config: RunConfig = pipeline_config.configs.get(trigger.config_id)
-            bucket_path = run_config.input_bucket_path
-            
-            # We need to find the last modified date for this pipeline's output datastream.
-
-            # Then we need to query the input bucket/prefix for all files modified since
-            # last output time.  Then we run the pipeline same as below.
-    
-        else:
-            # config = PipelineConfig.from_yaml(config_file)
-            # pipeline = config.instantiate_pipeline()
-            # inputs = input_keys if clump else [input_key]
-            # pipeline.run(inputs)
-            pass
-
     try:
-        
-
-        if pipeline_config.trigger == Trigger.Cron:
-            # For cron ingests, the event should have the run id passed in the input.
-            # We need to parse out the run id from the event and then look it up in the
-            # PipelineConfig.  From there we can find the input bucket and the prefix
-            # path.
-
-            # Next we need to find the last modified output file for that pipeline
-            # config from tsdat.
-
-            # Then we need to query the input bucket/prefix for all files modified since
-            # last output time.  Then we run the pipeline same as below.
-
+        if trigger.type == Trigger.Cron and pipeline_config.type == PipelineType.VAP:
+            # Open pipeline's retriever config file to find the input datastreams.  Then we
+            # need to find the last datetime the pipeline was run (we assume this is the last
+            # modified date of the pipeline output).  Then we find the data dates of any files
+            # that were modified after that datetime.  We will run the VAP for any days
+            # that were changed/added.  For now we will run the full range of days.  Later
+            # we can split into non-contiguous segments to improve processing.
             pass
+        
+        elif pipeline_config.type == PipelineType.Ingest:
+            
+            if trigger.type == Trigger.Cron:
+                input_bucket_arn = pipelines_config.input_bucket_arn
+                run_config: RunConfig = pipeline_config.configs.get(trigger.config_id)
+                bucket_path = run_config.input_bucket_path
+                
+                # We need to find the last modified date for this pipeline's output datastream.
 
-        else:
-            # This is the traditional old way of doing ingests
-            mapping_name = ""
-            pipeline_info: Dict = {}
-            input_files = []
+                # Then we need to query the input bucket/prefix for all files modified since
+                # last output time.  Then we run the pipeline same as below.
+                input_files = []
+        
+            else:
+                input_files = trigger.input_files
+                
+            logger.info(f"Running on input files: {input_files}")
+            assert len(input_files) >= 1, "No input files found!"
 
-            try:
-                with get_input_files_from_event(event) as input_files:
-                    logger.info(f"Running on input files: {input_files}")
-                    assert len(input_files) >= 1, "No input files found!"
+            cache = PipelineRegistry()
+            discovered = sorted(list(cache._cache))
+            logger.info(f"Discovered pipelines: {discovered}")
+            assert len(discovered) >= 1, "Lambda environment was configured incorrectly"
+            
+            config_files = cache._match_input_key(input_files[0])
+            assert len(config_files) > 0, f"No config files were matched by the input_file '{input_files[0]}'"
+            assert len(config_files) == 1, f"Multiple config files were matched by input_file '{input_files[0]}': {config_files}"
+            config_file = config_files[0]
 
-                    cache = PipelineRegistry()
-                    discovered = sorted(list(cache._cache))
-                    logger.info(f"Discovered pipelines: {discovered}")
-                    assert (
-                        len(discovered) >= 1
-                    ), "Lambda environment was configured incorrectly"
+            # Record information for extra context
+            mapping_name = str(config_file)
+            successes, failures, skipped = cache.dispatch(input_files, clump=True)
+            
+            success = successes >= 1 and failures == 0
 
-                    config_files = cache._match_input_key(input_files[0])
-                    assert len(config_files) > 0, (
-                        "No config files were matched by the input_file"
-                        f" '{input_files[0]}'"
-                    )
-                    assert len(config_files) == 1, (
-                        "Multiple config files were matched by input_file"
-                        f" '{input_files[0]}': {config_files}"
-                    )
-                    config_file = config_files[0]
-
-                    # Record information for extra context
-                    mapping_name = str(config_file)
-                    successes, failures, skipped = cache.dispatch(
-                        input_files, clump=True
-                    )
-
-                success = successes >= 1 and failures == 0
-
-            except BaseException:
-                logger.exception("Failed to run the pipeline.")
-
-            finally:
-                extra_context = {
-                    "mapping_name": mapping_name,
-                    "success": success,
-                    "input_files": input_files,
-                    "short_input_files": get_shortened_input_files(input_files),
-                    "code_version": os.environ.get("CODE_VERSION", ""),
-                }
+    except BaseException:
+        logger.exception("Failed to run the pipeline.")
 
     finally:
+        extra_context = {
+            "mapping_name": mapping_name,
+            "success": success,
+            "input_files": input_files,
+            "short_input_files": get_shortened_input_files(input_files),
+            "code_version": os.environ.get("CODE_VERSION", "")
+        }
+
         for handler in logging.getLogger().handlers:
             if isinstance(handler, DelayedJSONStreamHandler):
                 handler.flush(context=extra_context)
 
     return not success  # Convert successful exit codes to 0
 
-
-# if __name__ == "__main__":
-#    from pathlib import Path
-
-#    event_file = Path("event.json")
-#    event = json.loads(event_file.read_text())
-#    lambda_handler(event, None)

@@ -30,6 +30,9 @@ class Env:
 
     LAMBDA_ROLE_ARN = os.environ.get("LAMBDA_ROLE_ARN")
     TRIGGER = os.environ.get("TRIGGER")
+    
+    # This is passed into the build environment automatically by AWS
+    CODE_VERSION = os.environ.get("CODEBUILD_RESOLVED_SOURCE_VERSION", "test")
 
 
 class PipelineType:
