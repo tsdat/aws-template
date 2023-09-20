@@ -9,13 +9,20 @@ from pathlib import Path
 
 import boto3
 
-from utils.pipelines_config import PipelinesConfig, PipelineConfig
-from utils.constants import Type, Trigger
+from utils.pipelines_config import PipelinesConfig, PipelineConfig, RunConfig
+from utils.constants import PipelineType, Trigger
 from utils.registry import PipelineRegistry
 from utils.logger import configure_logger, DelayedJSONStreamHandler
 
 
 logger = logging.getLogger(__name__)
+
+class TriggerEvent():
+    def __init__(self, aws_event):
+        # TODO: parse the aws event and determine if this is a cron or s3 trigger
+        self.type = Trigger.S3
+        self.input_files: List[str] = []  # parsed if this is s3 event
+        self.config_id: str = None  # parsed if this is cron event
 
 
 def download_s3_record(record: Dict, target_dir: Path) -> str:
@@ -88,15 +95,6 @@ def set_env_vars():
     os.environ["CODE_VERSION"] = os.environ.get("CODE_VERSION", version)
 
 
-def get_sanitized_env_dict() -> Dict:
-    hide_triggers = ["key", "token", "secret"]
-    env = dict(os.environ)
-    for key in env.keys():
-        if any((trigger in key.lower() for trigger in hide_triggers)):
-            env[key] = "******"
-    return env
-
-
 def get_shortened_input_files(files: List[str]) -> List[str]:
     """Input files always look like `data-a2e$$$bdda6da226.0/buoy/buoy.z05.a0.20220109.112944.imu.a2e.nc`,
     which can be hard to read. This method shortens this filename to look like this:
@@ -116,51 +114,68 @@ def lambda_handler(event, context):
     logger.info(event)
     logger.info(context)
 
+def get_trigger(event) -> Tuple[]:
+    # Parse the event and determine if it is a cron or an s3 trigger
+    return False
 
 def lambda_handler_old(event, context):
     """--------------------------------------------------------------------------------
-    Lambda function to run a tsdat pipeline. The function will be triggered by an SNS
-    event for an incoming raw data file. The pipeline will process the raw file using
-    an ingestion pipeline and save the file to an S3 bucket specified by an environment
+    Lambda function to run a tsdat pipeline. The function will be triggered by either
+    1) a bucket event for an incoming raw data file, or
+    2) a cron event for pipelines that need to run on a schedule.
+
+    The pipeline will process the raw files using the specified configuration (either
+    ingest or vap) and save the file to an S3 bucket specified by an environment
     variable.
 
     Args:
-        event (Dict): Dictionary of event parameters. This should include the S3 file
-        that triggered the event.
+        event (Dict): Dictionary of event parameters. This will either include the S3 file
+        that triggered the event or the pipeline and config id if it was triggered via a
+        cron.
         context (object): Lambda context. Documentation for the methods and attributes
         this context provides is specified by AWS here:
         https://docs.aws.amazon.com/lambda/latest/dg/python-context-object.html
     --------------------------------------------------------------------------------"""
     # This is passed to the lambda configuration via the build
     pipeline_name = os.environ.get("PIPELINE_NAME")
-
-    # TODO: check the event to see if it is a cron event - we have to parse it differently
-    # {"config_id": config_id}
-    # If it's our cron format, then we can get the config_id from the event.
-
-    # Load the pipelines config file
-    pipeline_config: PipelineConfig = PipelinesConfig().pipelines.get(pipeline_name)
-
+    trigger = TriggerEvent(event)
+    pipelines_config: PipelinesConfig = PipelinesConfig()
+    pipeline_config: PipelineConfig = pipelines_config.pipelines.get(pipeline_name)
     set_env_vars()
     configure_logger(logger)
     extra_context = {}
     success = False
+    
+    if trigger.type == Trigger.Cron and pipeline_config.type == PipelineType.VAP:
+        # Open pipeline's retriever config file to find the input datastreams.  Then we
+        # need to find the last datetime the pipeline was run (we assume this is the last
+        # modified date of the pipeline output).  Then we find the data dates of any files
+        # that were modified after that datetime.  We will run the VAP for any days
+        # that were changed/added.  For now we will run the full range of days.  Later
+        # we can split into non-contiguous segments to improve processing.
+        pass
+    
+    elif trigger.type == Trigger.Cron and pipeline_config.type == PipelineType.Ingest:
+        input_bucket_arn = pipelines_config.input_bucket_arn
+        pipeline_prefix = pipeline_config.input_prefix
+        run_config: RunConfig = pipeline_config.configs.get(trigger.config_id)
+        run_prefix = run_config.input_bucket_path
+        
+        # For cron ingests, the event should have the run id passed in the input.
+        # We need to parse out the run id from the event and then look it up in the
+        # PipelineConfig.  From there we can find the input bucket and the prefix
+        # path.
 
-    # Tsdat TODO:
-    # 1) How can we get the last modified date for a datastream in output bucket?
+        # Next we need to find the last modified output file for that pipeline
+        # config from tsdat.
+
+        # Then we need to query the input bucket/prefix for all files modified since
+        # last output time.  Then we run the pipeline same as below.
 
     try:
-        if pipeline_config.type == Type.VAP:
-            # TODO: If VAP, then we need to open the
-            # pipeline's retriever config file to find the input datastreams.  Then we
-            # need to get the last modified date of the latest output file.  Then we
-            # check the dates of the input datastream files.  Any file that was modified
-            # after the last output file is a candidate for running the VAP.  We take the
-            # day range of the available input files, and those are the days we run the VAP
-            # for.
-            pass
+        
 
-        elif pipeline_config.trigger == Trigger.Cron:
+        if pipeline_config.trigger == Trigger.Cron:
             # For cron ingests, the event should have the run id passed in the input.
             # We need to parse out the run id from the event and then look it up in the
             # PipelineConfig.  From there we can find the input bucket and the prefix
@@ -221,8 +236,6 @@ def lambda_handler_old(event, context):
                     "input_files": input_files,
                     "short_input_files": get_shortened_input_files(input_files),
                     "code_version": os.environ.get("CODE_VERSION", ""),
-                    # "environment": get_sanitized_env_dict(),
-                    # "event": event,
                 }
 
     finally:

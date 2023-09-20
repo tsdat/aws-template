@@ -8,4 +8,9 @@ services:
         command: ['tail', '-f',  '/dev/null']
         volumes:
             - ./:/root/cdk_app
+            - ../tsdat:/root/tsdat
+            - ../pipeline-template:/root/pipeline-template
             - ${HOME}/.aws:/root/.aws
+        environment:
+            - PYTHONPATH:/root/tsdat:/root/pipeline-template:/root/cdk_app/
+

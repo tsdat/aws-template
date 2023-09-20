@@ -32,7 +32,7 @@ class Env:
     TRIGGER = os.environ.get("TRIGGER")
 
 
-class Type:
+class PipelineType:
     Ingest = "Ingest"
     Vap = "VAP"
 
