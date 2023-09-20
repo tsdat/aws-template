@@ -2,6 +2,8 @@ import json
 import os
 import shutil
 import subprocess
+import sys
+import traceback
 from typing import List, Optional
 
 import boto3
@@ -244,7 +246,8 @@ class TsdatPipelineBuild:
             policy = self.lambda_client.get_policy(FunctionName=lambda_arn)
             print(f"lambda policy is: {policy}")
             print(f"type of policy is {type(policy)}")
-        except:
+        except Exception:
+            traceback.print_exc(file=sys.stdout)
             return False
         return "S3InputBucketInvokeLambda" in policy["Policy"] 
 

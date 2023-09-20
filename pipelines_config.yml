@@ -31,10 +31,6 @@ github_codestar_arn: arn:aws:codestar-connections:us-east-2:332883119153:connect
 #               need to be processed together.  VAP pipelines
 #               must always use cron.
 #
-#   input_prefix - Relative path from the root of the input S3 bucket
-#                  where input files for this pipeline will be
-#                  uploaded. Only used for Ingest pipelines.
-#
 #  schedule -  Schedule for cron triggers.  Can be Hourly, Daily,
 #              Weekly, or Monthly.  Only used if trigger is cron.
 #
@@ -54,12 +50,13 @@ github_codestar_arn: arn:aws:codestar-connections:us-east-2:332883119153:connect
 #
 #  TODO:        We may want to add paramters for lambda timeout and
 #               memory if we need to customize them per pipeline
+#               We may also want to specify the bucket names instead
+#               of having them auto-generated.
 ###################################################################
 pipelines:
   - name: lidar
     type: Ingest
     trigger: S3
-    input_prefix: lidar
 
     configs:
       humbolt:

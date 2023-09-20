@@ -17,7 +17,6 @@ class PipelineConfig:
     def __init__(self, values: dict):
         self.name: str = values.get("name")
         self.type: str = values.get("type")
-        self.input_prefix: str = values.get("input_prefix")
         self.trigger: str = values.get("trigger")
         self.schedule: str = values.get("schedule")
 
