@@ -218,6 +218,10 @@ def lambda_handler_old(event, context):
             if trigger.type == Trigger.Cron:
                 input_bucket_arn = pipelines_config.input_bucket_arn
                 bucket_path = run_config.input_bucket_path
+                bucket_path = (
+                    f"{bucket_path}/" if not bucket_path.endswith("/") else bucket_path
+                )
+                bucket_path = f"{bucket_path}*"
 
                 # We need to find the last modified date for this pipeline's output datastream.
                 last_modified: datetime = pipeline.storage.last_modified(
