@@ -2,7 +2,8 @@ import logging
 import os
 import json
 import tempfile
-from typing import Dict, List, Generator
+from datetime import datetime, timedelta
+from typing import Dict, List, Generator, Optional
 from urllib.parse import unquote_plus
 from pathlib import Path
 
@@ -113,11 +114,31 @@ def get_shortened_input_files(files: List[str]) -> List[str]:
     return ["/".join(file.split("/")[1:]) for file in files]
 
 
+def get_next_day(date: datetime) -> Optional[datetime]:
+    """
+    Get the datetime for one day after the given date.
+
+    Args:
+        date (datetime):
+
+    Returns:
+        datetime:  datetime for one day after date or None if date is None
+    """
+    return date + timedelta(days=1) if date else None
+
+
+def round_time_to_midnight(time: datetime) -> datetime:
+    """
+    Convert the given datetime to the same day at midnight.
+    """
+    return time.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
 def lambda_handler(event, context):
-    logger.info("Dumping event")
-    logger.info(json.dumps(event, indent=4))
-    logger.info("Dumping context")
-    logger.info(json.dumps(context, indent=4))
+    print("Dumping event")
+    print(json.dumps(event, indent=4))
+    print("Dumping context")
+    print(json.dumps(context, indent=4))
 
 
 def lambda_handler_old(event, context):
@@ -157,23 +178,41 @@ def lambda_handler_old(event, context):
         tsdat_config = TsdatPipelineConfig.from_yaml(run_config.config_file_path)
         pipeline = tsdat_config.instantiate_pipeline()
 
+        # Get the output datastream (e.g., humboldt.buoy_z06.a1)
+        data_class = pipeline.dataset_config.attrs["datastream"]
+        location = pipeline.dataset_config.attrs["location_id"]
+        data_level = pipeline.dataset_config.attrs["data_level"]
+        output_datastream = f"{location}.{data_class}.{data_level}"
+
         if trigger.type == Trigger.Cron and pipeline_config.type == PipelineType.VAP:
-            # Get the input datastreams:
-            datastreams: List[str] = pipeline.parameters.datastreams
+            # Get the input datastreams
+            input_datastreams: List[str] = pipeline.parameters.datastreams
 
-            # From storage, find the last datetime of the output datastream
+            # From storage, find the last datetime of the output datastream and any
+            # input data dates that were modified since.
+            last_modified: datetime = pipeline.storage.last_modified(output_datastream)
+            modified_days: List[datetime] = []
+            for input_datastream in input_datastreams:
+                modified_days.extend(
+                    pipeline.storage.modified_since(input_datastream, last_modified)
+                )
 
-            # From storage, find any input dates that were modified since the last
-            # output.
+            if len(modified_days) == 0:
+                logger.info(f"No new input files available to run!")
 
-            # We will run the VAP for any days
-            # that were changed/added.  For now we will run the full range of days.  Later
-            # we can split into non-contiguous segments to improve processing.
+            else:
+                # We will run the VAP for any days that were changed/added.  For now we will
+                # run the full range of days.  Later we can split into non-contiguous
+                # segments to improve processing.
+                modified_days = sorted(modified_days)
+                start_day = round_time_to_midnight(modified_days[0])
+                end_day = get_next_day(round_time_to_midnight(modified_days[-1]))
 
-            # Start and end dates for the pipeline need to be strings in this format: 20230101
-            start_day = "20230101"
-            end_day = "20230102"
-            inputs = [start_day, end_day]
+                # Start and end dates for the pipeline need to be strings in this
+                # format: 20230101
+                start_day = start_day.strftime("%Y%m%d")
+                end_day = end_day.strftime("%Y%m%d")
+                inputs = [start_day, end_day]
 
         elif pipeline_config.type == PipelineType.Ingest:
             if trigger.type == Trigger.Cron:
@@ -181,6 +220,9 @@ def lambda_handler_old(event, context):
                 bucket_path = run_config.input_bucket_path
 
                 # We need to find the last modified date for this pipeline's output datastream.
+                last_modified: datetime = pipeline.storage.last_modified(
+                    output_datastream
+                )
 
                 # Then we need to query the input bucket/prefix for all files modified since
                 # last output time.  Then we run the pipeline same as below.
@@ -191,7 +233,9 @@ def lambda_handler_old(event, context):
 
             assert len(inputs) >= 1, "No input files found!"
 
-        pipeline.run(inputs)
+        if len(inputs) > 0:
+            pipeline.run(inputs)
+
         success = True
 
     except BaseException:
