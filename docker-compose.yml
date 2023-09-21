@@ -9,8 +9,8 @@ services:
         volumes:
             - ./:/root/cdk_app
             - ../tsdat:/root/tsdat
-            - ../pipeline-template:/root/pipeline-template
+            - ../ingest-buoy:/root/ingest-buoy
             - ${HOME}/.aws:/root/.aws
         environment:
-            - PYTHONPATH:/root/tsdat:/root/pipeline-template:/root/cdk_app/
+            - PYTHONPATH=/root/tsdat:/root/ingest-buoy:/root/cdk_app/
 

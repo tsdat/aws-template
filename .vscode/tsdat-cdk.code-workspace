@@ -10,10 +10,10 @@
 			"path": "../../../usr/local/lib/python3.11/site-packages"
 		},
 		{
-			"path": "../../pipeline-template"
+			"path": "../../tsdat"
 		},
 		{
-			"path": "../../tsdat"
+			"path": "../../ingest-buoy"
 		}
 	],
 	"settings": {
@@ -28,6 +28,7 @@
 		"python.analysis.logLevel": "Information",
 		"python.analysis.exclude": [
 			"/usr/local/lib/python3.11/site-packages",
+			"/root/ingest-buoy"
 		],
 		"debug.toolBarLocation": "docked",
 		"workbench.colorCustomizations": {
@@ -82,6 +83,23 @@
 					"PIPELINES_REPO_NAME": "ingest-buoy",
 					"BRANCH": "dev",
 					"LAMBDA_ROLE_ARN": "arn:aws:iam::332883119153:role/ingest-buoy-dev-CodePipel-ingestbuoydevLambdaRole3-7GL60IRC0IC4",
+				},
+			},
+			{
+				"name": "Debug lambda",
+				"type": "python",
+				"request": "launch",
+				"program": "/root/cdk_app/code_build/docker/lambda_function.py",
+				"console": "integratedTerminal",
+				"justMyCode": false,
+				"cwd": "/root/ingest-buoy/",
+				"env": {
+					"PYTHONPATH": "/root/cdk_app/:/root/tsdat:/root/ingest-buoy",
+					"CODE_VERSION": "test",
+					"PIPELINE_NAME": "lidar",
+					"CONFIG_ID": "morro",
+					"PIPELINES_CONFIG_PATH": "/root/cdk_app/pipelines_config.yml",
+					"BRANCH": "dev",
 				},
 			},
 		]

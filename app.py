@@ -4,7 +4,7 @@ import os
 import aws_cdk as cdk
 
 from code_pipeline.code_pipeline_stack import CodePipelineStack
-from utils.pipelines_config import PipelinesConfig
+from build_utils.pipelines_config import PipelinesConfig
 
 app = cdk.App()
 config = PipelinesConfig()
