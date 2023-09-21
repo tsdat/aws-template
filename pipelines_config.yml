@@ -3,7 +3,8 @@
 ###################################################################
 # Build Parameters
 ###################################################################
-# GitHub Repository (TODO: support repos being in 2 different orgs)
+# GitHub Repository (TODO: support repos being in 2 different orgs.
+# For now they must be in the same org.)
 github_org: carinatest
 pipelines_repo_name: ingest-buoy
 aws_repo_name: aws-template

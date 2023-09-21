@@ -45,3 +45,6 @@ logging for every log statement in the code.
 # Revert back build environment
 docker-compose:  comment out the other folder mounts and environment params
 tsdat-cdk.code-workspace:  comment out the other folder paths
+
+rebuild images
+modify ingest-buoy fork
