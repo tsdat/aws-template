@@ -93,14 +93,13 @@ class TsdatPipelineBuild:
             destination_file = os.path.join(destination_folder, file)
             shutil.copy(source_file, destination_file)
 
-        # We also need to copy all of the build utils into the pipelines repo
-        source_folder = os.path.join(Env.AWS_REPO_PATH, "utils")
-        destination_folder = os.path.join(Env.PIPELINES_REPO_PATH, "utils")
-        files = os.listdir(source_folder)
-        for file in files:
-            source_file = os.path.join(source_folder, file)
-            destination_file = os.path.join(destination_folder, file)
-            shutil.copy(source_file, destination_file)
+        # We also need to copy the build utils into the pipelines repo
+        source_file = os.path.join(Env.AWS_REPO_PATH, "utils", "constants.py")
+        dest_file = os.path.join(destination_folder, "utils", "constants.py")
+        shutil.copy(source_file, dest_file)
+        source_file = os.path.join(Env.AWS_REPO_PATH, "utils", "pipelines_config.py")
+        dest_file = os.path.join(destination_folder, "utils", "pipelines_config.py")
+        shutil.copy(source_file, dest_file)
 
         # We also need to copy over the pipelines config file
         source_file = os.path.join(Env.AWS_REPO_PATH, "pipelines_config.yml")
