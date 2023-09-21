@@ -30,6 +30,7 @@ phases:
       - export TRIGGER=$(aws codepipeline list-pipeline-executions --pipeline $AWS_PIPELINE_NAME | jq -r ".pipelineExecutionSummaries[]|select(.pipelineExecutionId==\"$ID\")|.trigger.triggerType")
       - echo "Trigger = $TRIGGER"
       - echo "Identifying pipelines with changes..."
+      - aws codepipeline list-pipeline-executions --pipeline-name $AWS_PIPELINE_NAME
       - PREVIOUS_COMMIT_HASH=$(aws codepipeline list-pipeline-executions --pipeline-name $AWS_PIPELINE_NAME | jq -r '[.pipelineExecutionSummaries[] | select(.status == "Succeeded") | .sourceRevisions][0][] | select(.actionName == "Source") | .revisionId')
       - CURRENT_COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
       - echo "previous commit = $PREVIOUS_COMMIT_HASH"
