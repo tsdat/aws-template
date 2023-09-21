@@ -9,56 +9,119 @@ from pathlib import Path
 
 import boto3
 
-from utils.pipelines_config import PipelinesConfig, PipelineConfig, RunConfig
-from utils.constants import PipelineType, Trigger
+from build_utils.pipelines_config import PipelinesConfig, PipelineConfig, RunConfig
+from build_utils.constants import PipelineType, Trigger
 from tsdat.config.pipeline import PipelineConfig as TsdatPipelineConfig
-from utils.registry import PipelineRegistry
-from utils.logger import configure_logger, DelayedJSONStreamHandler
+from build_utils.logger import configure_logger, DelayedJSONStreamHandler
 
+
+# Initialize global parameters
+tmp_dir = tempfile.TemporaryDirectory()
+tmp_dirpath = Path(tmp_dir.name)
+
+# This is passed to the lambda configuration via the build
+pipeline_name = os.environ.get("PIPELINE_NAME")
+config_id = os.environ.get("CONFIG_ID")
+pipelines_config_path = os.environ.get("PIPELINES_CONFIG_PATH", "pipelines_config.yml")
+pipelines_config: PipelinesConfig = PipelinesConfig(
+    config_file_path=pipelines_config_path
+)
+pipeline_config: PipelineConfig = pipelines_config.pipelines.get(pipeline_name)
+run_config: RunConfig = pipeline_config.configs.get(config_id)
+s3_client = boto3.client("s3", region_name=pipelines_config.region)
 
 logger = logging.getLogger(__name__)
 
 
-class EventTrigger:
-    def __init__(self, aws_event, pipeline_config: PipelineConfig):
-        # TODO: parse the aws event and determine if this is a cron or s3 trigger
-        self.type = Trigger.S3
-        self.input_files = None
-        self.pipeline_config = pipeline_config
+def get_input_files_from_event(event) -> List[str]:
+    input_files: List[str] = []
 
-        if self.type == Trigger.S3:
-            self.input_files: List[str] = self.get_input_files_from_event(aws_event)
-        else:
-            self.config_id: str = None  # parsed if this is cron event
+    for record in event["Records"]:
+        bucket_name = record["s3"]["bucket"]["name"]
+        bucket_path = record["s3"]["object"]["key"]
+        local_path = download_s3_file(bucket_name, bucket_path)
+        input_files.append(local_path)
 
-    def get_input_files_from_event(self, event) -> List[str]:
-        tmp_dir = tempfile.TemporaryDirectory()
-        tmp_dirpath = Path(tmp_dir.name)
-
-        input_files: List[str] = []
-        sns = json.loads(event["Records"][0]["Sns"]["Message"])
-        for record in sns["Records"]:
-            record_path = download_s3_record(json.loads(record), tmp_dirpath)
-            input_files.append(record_path)
-
-        return input_files
+    return input_files
 
 
-def download_s3_record(record: Dict, target_dir: Path) -> str:
-    bucket_name = record["s3"]["bucket"]["name"]
-    bucket_path = Path(unquote_plus(record["s3"]["object"]["key"]))
-
-    local_path = target_dir / bucket_path
+def download_s3_file(bucket_name: str, bucket_path: str) -> str:
+    local_path = tmp_dirpath / bucket_path
     local_path.parent.mkdir(parents=True, exist_ok=True)
     local_path = str(local_path)
 
-    session = boto3.session.Session()
-    bucket = session.resource("s3").Bucket(bucket_name)
-    bucket.download_file(
-        Key=str(bucket_path),
-        Filename=local_path,
-    )
+    s3_client.download_file(bucket_name, bucket_path, local_path)
     return local_path
+
+
+def get_recently_modified_raw_files(pipeline, output_datastream: str) -> List[str]:
+    input_files = []
+    bucket_name = pipelines_config.input_bucket_name
+    folder_bucket_path = run_config.input_bucket_path
+    folder_bucket_path = (
+        f"{folder_bucket_path}/"
+        if not folder_bucket_path.endswith("/")
+        else folder_bucket_path
+    )
+
+    # We need to find the last modified date for this pipeline's output datastream.
+    last_modified: datetime = pipeline.storage.last_modified(output_datastream)
+
+    # Then we need to query the input bucket/prefix for all files modified since
+    # last output time.  Then we run the pipeline same as below.
+    paginator = s3_client.get_paginator("list_objects_v2")
+    pages = paginator.paginate(
+        Bucket=pipelines_config.input_bucket_name, Prefix=folder_bucket_path
+    )
+
+    for page in pages:
+        for object in page["Contents"]:
+            file_bucket_path = object["Key"]
+            if file_bucket_path != folder_bucket_path and (
+                not last_modified or object["LastModified"] > last_modified
+            ):
+                logger.info(f"Adding file to input: {object['Key']}")
+                input_files.append(download_s3_file(bucket_name, file_bucket_path))
+
+    return input_files
+
+
+def get_available_vap_dates(pipeline, output_datastream) -> List[str]:
+    inputs = []
+    # Get the input datastreams
+    input_datastreams: List[str] = pipeline.parameters.datastreams
+
+    # From storage, find the last datetime of the output datastream and any
+    # input data dates that were modified since.
+    last_modified: datetime = pipeline.storage.last_modified(output_datastream)
+    logger.info(f"Last output date for vap = {last_modified}")
+    modified_days: List[datetime] = []
+    for input_datastream in input_datastreams:
+        logger.info(
+            f"Input datastream {input_datastream} modified after last output date."
+        )
+        modified_days.extend(
+            pipeline.storage.modified_since(input_datastream, last_modified)
+        )
+
+    if len(modified_days) == 0:
+        logger.info(f"No new input files available to run!")
+
+    else:
+        # We will run the VAP for any days that were changed/added.  For now we will
+        # run the full range of days.  Later we can split into non-contiguous
+        # segments to improve processing.
+        modified_days = sorted(modified_days)
+        start_day = round_time_to_midnight(modified_days[0])
+        end_day = get_next_day(round_time_to_midnight(modified_days[-1]))
+
+        # Start and end dates for the pipeline need to be strings in this
+        # format: 20230101
+        start_day = start_day.strftime("%Y%m%d")
+        end_day = end_day.strftime("%Y%m%d")
+        inputs = [start_day, end_day]
+
+    return inputs
 
 
 def set_env_vars():
@@ -76,8 +139,7 @@ def set_env_vars():
     -------------------------------------------------------------------"""
 
     # Name of storage bucket where output files are written
-    # Set the TSDAT_S3_BUCKET_NAME environment variable
-    # bucket_name = os.environ["STORAGE_BUCKET"]
+    os.environ["TSDAT_S3_BUCKET_NAME"] = pipelines_config.output_bucket_name
 
     # Logging level to use. If provided from an environment variable, it must match one
     # of the levels here: https://docs.python.org/3/library/logging.html#logging-levels
@@ -87,8 +149,8 @@ def set_env_vars():
     logging_level = os.environ.get("LOG_LEVEL", "INFO").upper()
     os.environ["LOG_LEVEL"] = logging_level
 
-    storage_classname = os.environ.get("STORAGE_CLASSNAME", "tsdat.FileSystemS3")
-    os.environ["STORAGE_CLASSNAME"] = storage_classname
+    # TODO: add storage classname to the pipelines config so it can be configured
+    os.environ["TSDAT_STORAGE_CLASS"] = "tsdat.FileSystemS3"
 
     try:
         version = (
@@ -97,21 +159,6 @@ def set_env_vars():
     except IOError:
         version = "N/A"
     os.environ["CODE_VERSION"] = os.environ.get("CODE_VERSION", version)
-
-
-def get_shortened_input_files(files: List[str]) -> List[str]:
-    """Input files always look like `data-a2e$$$bdda6da226.0/buoy/buoy.z05.a0.20220109.112944.imu.a2e.nc`,
-    which can be hard to read. This method shortens this filename to look like this:
-    `buoy/buoy.z05.a0.20220109.112944.imu.a2e.nc`. This method performs this operation
-    on any number of input files.
-
-    Args:
-        files (List[str]): The list of input files to shorten.
-
-    Returns:
-        List[str]: The shortened list of input files.
-    """
-    return ["/".join(file.split("/")[1:]) for file in files]
 
 
 def get_next_day(date: datetime) -> Optional[datetime]:
@@ -135,13 +182,6 @@ def round_time_to_midnight(time: datetime) -> datetime:
 
 
 def lambda_handler(event, context):
-    print("Dumping event")
-    print(json.dumps(event, indent=4))
-    print("Dumping context")
-    print(json.dumps(context, indent=4))
-
-
-def lambda_handler_old(event, context):
     """--------------------------------------------------------------------------------
     Lambda function to run a tsdat pipeline. The function will be triggered by either
     1) a bucket event for an incoming raw data file, or
@@ -159,90 +199,32 @@ def lambda_handler_old(event, context):
         this context provides is specified by AWS here:
         https://docs.aws.amazon.com/lambda/latest/dg/python-context-object.html
     --------------------------------------------------------------------------------"""
-    # This is passed to the lambda configuration via the build
-    pipeline_name = os.environ.get("PIPELINE_NAME")
-    config_id = os.environ.get("CONFIG_ID")
-    trigger = EventTrigger(event)
-    pipelines_config: PipelinesConfig = PipelinesConfig()
-    pipeline_config: PipelineConfig = pipelines_config.pipelines.get(pipeline_name)
-    run_config: RunConfig = pipeline_config.configs.get(config_id)
-    inputs = []
-
     set_env_vars()
     configure_logger(logger)
+    inputs = []
     extra_context = {}
     success = False
 
     try:
         logger.info(f"Running pipeline {pipeline_name} {config_id}")
-        tsdat_config = TsdatPipelineConfig.from_yaml(run_config.config_file_path)
+        tsdat_config = TsdatPipelineConfig.from_yaml(Path(run_config.config_file_path))
         pipeline = tsdat_config.instantiate_pipeline()
 
-        # Get the output datastream (e.g., humboldt.buoy_z06.a1)
-        data_class = pipeline.dataset_config.attrs["datastream"]
-        location = pipeline.dataset_config.attrs["location_id"]
-        data_level = pipeline.dataset_config.attrs["data_level"]
-        output_datastream = f"{location}.{data_class}.{data_level}"
+        # Get the output datastream (e.g., morro.buoy_z06-lidar-10m.a1)
+        output_datastream = pipeline.dataset_config.attrs.datastream
 
-        if trigger.type == Trigger.Cron and pipeline_config.type == PipelineType.VAP:
-            # Get the input datastreams
-            input_datastreams: List[str] = pipeline.parameters.datastreams
-
-            # From storage, find the last datetime of the output datastream and any
-            # input data dates that were modified since.
-            last_modified: datetime = pipeline.storage.last_modified(output_datastream)
-            modified_days: List[datetime] = []
-            for input_datastream in input_datastreams:
-                modified_days.extend(
-                    pipeline.storage.modified_since(input_datastream, last_modified)
-                )
-
-            if len(modified_days) == 0:
-                logger.info(f"No new input files available to run!")
-
-            else:
-                # We will run the VAP for any days that were changed/added.  For now we will
-                # run the full range of days.  Later we can split into non-contiguous
-                # segments to improve processing.
-                modified_days = sorted(modified_days)
-                start_day = round_time_to_midnight(modified_days[0])
-                end_day = get_next_day(round_time_to_midnight(modified_days[-1]))
-
-                # Start and end dates for the pipeline need to be strings in this
-                # format: 20230101
-                start_day = start_day.strftime("%Y%m%d")
-                end_day = end_day.strftime("%Y%m%d")
-                inputs = [start_day, end_day]
+        if (
+            pipeline_config.trigger == Trigger.Cron
+            and pipeline_config.type == PipelineType.VAP
+        ):
+            inputs = get_available_vap_dates(pipeline, output_datastream)
 
         elif pipeline_config.type == PipelineType.Ingest:
-            if trigger.type == Trigger.Cron:
-                input_bucket_arn = pipelines_config.input_bucket_arn
-                bucket_path = run_config.input_bucket_path
-                bucket_path = (
-                    f"{bucket_path}/" if not bucket_path.endswith("/") else bucket_path
-                )
-
-                # We need to find the last modified date for this pipeline's output datastream.
-                last_modified: datetime = pipeline.storage.last_modified(
-                    output_datastream
-                )
-
-                # Then we need to query the input bucket/prefix for all files modified since
-                # last output time.  Then we run the pipeline same as below.
-                s3_client = boto3.client("s3")
-                paginator = s3_client.get_paginator("list_objects_v2")
-                pages = paginator.paginate(
-                    Bucket=pipelines_config.input_bucket_name, Prefix=bucket_path
-                )
-
-                for page in pages:
-                    for object in page["Contents"]:
-                        if object["LastModified"] > last_modified:
-                            print(f"Adding file to input: {object['Key']}")
-                            inputs.append(object["Key"])
+            if pipeline_config.trigger == Trigger.Cron:
+                inputs = get_recently_modified_raw_files(pipeline, output_datastream)
 
             else:
-                inputs = trigger.input_files
+                inputs = get_input_files_from_event(event)
 
             assert len(inputs) >= 1, "No input files found!"
 
@@ -266,3 +248,21 @@ def lambda_handler_old(event, context):
                 handler.flush(context=extra_context)
 
     return not success  # Convert successful exit codes to 0
+
+
+if __name__ == "__main__":
+    event = {
+        "Records": [
+            {
+                "s3": {
+                    "bucket": {
+                        "name": "ingest-buoy-dev-raw",
+                    },
+                    "object": {
+                        "key": "lidar/morro/lidar.z06.00.20201201.000000.sta.7z",
+                    },
+                }
+            }
+        ]
+    }
+    lambda_handler(event, None)

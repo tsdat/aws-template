@@ -9,8 +9,8 @@ from typing import List, Optional
 import boto3
 from botocore.exceptions import ClientError
 
-from utils.constants import Env, PipelineType, Trigger, Schedule
-from utils.pipelines_config import PipelinesConfig, PipelineConfig, RunConfig
+from build_utils.constants import Env, PipelineType, Trigger, Schedule
+from build_utils.pipelines_config import PipelinesConfig, PipelineConfig, RunConfig
 
 
 class TsdatPipelineBuild:
@@ -76,6 +76,11 @@ class TsdatPipelineBuild:
 
         return changed_pipelines
 
+    def copy_file(self, source_folder, dest_folder, file_relative_path):
+        source_file = os.path.join(source_folder, file_relative_path)
+        dest_file = os.path.join(dest_folder, file_relative_path)
+        shutil.copy(source_file, dest_file)
+
     def build_base_image(self):
         """
         build the base Docker image that is shared by all pipelines.  This build runs
@@ -89,22 +94,16 @@ class TsdatPipelineBuild:
         destination_folder = Env.PIPELINES_REPO_PATH
         files = os.listdir(source_folder)
         for file in files:
-            source_file = os.path.join(source_folder, file)
-            destination_file = os.path.join(destination_folder, file)
-            shutil.copy(source_file, destination_file)
+            self.copy_file(source_folder, destination_folder, file)
 
         # We also need to copy the build utils into the pipelines repo
-        source_file = os.path.join(Env.AWS_REPO_PATH, "utils", "constants.py")
-        dest_file = os.path.join(destination_folder, "utils", "constants.py")
-        shutil.copy(source_file, dest_file)
-        source_file = os.path.join(Env.AWS_REPO_PATH, "utils", "pipelines_config.py")
-        dest_file = os.path.join(destination_folder, "utils", "pipelines_config.py")
-        shutil.copy(source_file, dest_file)
+        shutil.copytree(
+            os.path.join(Env.AWS_REPO_PATH, "build_utils"),
+            os.path.join(destination_folder, "build_utils"),
+        )
 
         # We also need to copy over the pipelines config file
-        source_file = os.path.join(Env.AWS_REPO_PATH, "pipelines_config.yml")
-        dest_file = os.path.join(destination_folder, "pipelines_config.yml")
-        shutil.copy(source_file, dest_file)
+        self.copy_file(Env.AWS_REPO_PATH, destination_folder, "pipelines_config.yml")
 
         self.build_image(Env.PIPELINES_REPO_NAME, "Dockerfile.base")
 
@@ -250,7 +249,8 @@ class TsdatPipelineBuild:
                 "CONFIG_ID": run_config.id,
                 "RETAIN_INPUT_FILES": "true",
                 "CODE_VERSION": Env.CODE_VERSION,
-                "TSDAT_S3_BUCKET_NAME": self.config.input_bucket_name,
+                "TSDAT_S3_BUCKET_NAME": self.config.output_bucket_name,
+                "BRANCH": Env.BRANCH,
             }
         }
 
@@ -261,10 +261,19 @@ class TsdatPipelineBuild:
         try:
             lambda_arn = self.config.get_lambda_arn(pipeline_config.name, run_config.id)
             policy = self.lambda_client.get_policy(FunctionName=lambda_arn)
+            return statement_id in policy["Policy"]
         except Exception:
             # traceback.print_exc(file=sys.stdout)
             return False
-        return statement_id in policy["Policy"]
+
+    def s3_folder_exists(self, bucket_name, path_to_folder):
+        try:
+            response = self.s3_client.list_objects_v2(
+                Bucket=bucket_name, Prefix=path_to_folder
+            )
+            return "Contents" in response
+        except Exception:
+            return False
 
     def add_or_update_s3_triggers(self, pipeline_config: PipelineConfig):
         """
@@ -315,7 +324,8 @@ class TsdatPipelineBuild:
             # Make sure the bucket folder exists (so we can see it in the UI)
             subpath: str = run_config.input_bucket_path
             subpath = f"{subpath}/" if not subpath.endswith("/") else subpath
-            self.s3_client.put_object(Bucket=bucket_name, Key=(subpath))
+            if not self.s3_folder_exists(bucket_name, subpath):
+                self.s3_client.put_object(Bucket=bucket_name, Key=(subpath))
 
         # Create the S3 event trigger (this will replace any existing notification config)
         print(f"notification configuration = {notification_configuration}")

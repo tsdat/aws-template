@@ -27,8 +27,8 @@ RUN mv /var/lang/bin/pip3 /var/lang/bin/pip3-old && ln -sf /opt/conda-env/bin/pi
 
 # Copy over all the shared code into the image
 COPY utils utils
+COPY build_utils build_utils
 COPY shared shared
-COPY logger.py utils/
 COPY storage-extra.yaml shared/
 RUN cat shared/storage-extra.yaml >> shared/storage.yaml
 

@@ -24,8 +24,8 @@ from aws_cdk.aws_iam import PolicyStatement, Effect
 
 from constructs import Construct
 
-from utils.pipelines_config import PipelinesConfig
-from utils.constants import Env
+from build_utils.pipelines_config import PipelinesConfig
+from build_utils.constants import Env
 
 
 class CodePipelineStack(Stack):

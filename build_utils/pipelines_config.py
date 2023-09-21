@@ -47,11 +47,12 @@ class PipelineConfig:
 
 
 class PipelinesConfig:
-    def __init__(self):
+    def __init__(self, config_file_path=None):
         """Constructor
         Loads the config settings from the given config file.
         """
-        config_file_path = PipelinesConfig.get_config_file_path()
+        if not config_file_path:
+            config_file_path = PipelinesConfig.get_config_file_path()
 
         with open(config_file_path, "r") as file:
             config = yaml.full_load(file)

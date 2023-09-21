@@ -56,11 +56,13 @@ github_codestar_arn: arn:aws:codestar-connections:us-east-2:332883119153:connect
 pipelines:
   - name: lidar
     type: Ingest
-    trigger: S3
+    #trigger: S3
+    trigger: Cron
+    schedule: Hourly
 
     configs:
-      humbolt:
-        input_bucket_path: lidar/humbolt/
+      humboldt:
+        input_bucket_path: lidar/humboldt/
         config_file_path: pipelines/lidar/config/pipeline_humboldt.yaml
       morro:
         input_bucket_path: lidar/morro/
