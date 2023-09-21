@@ -15,7 +15,7 @@ CHANGE_FILE=/tmp/changelist
     # environment from the stack.
     # Alternatively, we could parse it from the $CODEBUILD_INITIATOR param that is set
     # by AWS.  (e.g., CODEBUILD_INITIATOR=codepipeline/ingest-buoy-dev-build-pipline)
-PREVIOUS_COMMIT_HASH=$(aws codepipeline list-pipeline-executions --pipeline-name $AWS_PIPELINE_NAME | jq -r '[.pipelineExecutionSummaries[] | select(.status == "Succeeded") | .sourceRevisions][0][] | select(.actionName == "Source") | .revisionId')
+PREVIOUS_COMMIT_HASH=$(aws codepipeline list-pipeline-executions --pipeline-name $AWS_PIPELINE_NAME | jq -r '[.pipelineExecutionSummaries[] | select(.status == "Succeeded") | .sourceRevisions][0][] | select(.actionName == "pipelines-source-action") | .revisionId')
 
 # Do a git diff to get the list of files that were changed in the latest commit
     # CODEBUILD_RESOLVED_SOURCE_VERSION is set by CodePipeline and points to the most recent commit hash

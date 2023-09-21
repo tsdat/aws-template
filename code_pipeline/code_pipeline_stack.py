@@ -81,7 +81,7 @@ class CodePipelineStack(Stack):
         )
         """
         action = CodeStarConnectionsSourceAction(
-            action_name=f"{repo}-source-action",
+            action_name=f"{output_name}-source-action",
             owner=self.config.github_org,
             repo=repo,
             output=output,
