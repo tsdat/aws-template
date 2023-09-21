@@ -114,8 +114,10 @@ def get_shortened_input_files(files: List[str]) -> List[str]:
 
 
 def lambda_handler(event, context):
-    logger.info(event)
-    logger.info(context)
+    logger.info("Dumping event")
+    logger.info(json.dumps(event, indent=4))
+    logger.info("Dumping context")
+    logger.info(json.dumps(context, indent=4))
 
 
 def lambda_handler_old(event, context):
@@ -156,10 +158,15 @@ def lambda_handler_old(event, context):
         pipeline = tsdat_config.instantiate_pipeline()
 
         if trigger.type == Trigger.Cron and pipeline_config.type == PipelineType.VAP:
-            # Open pipeline's retriever config file to find the input datastreams.  Then we
-            # need to find the last datetime the pipeline was run (we assume this is the last
-            # modified date of the pipeline output).  Then we find the data dates of any files
-            # that were modified after that datetime.  We will run the VAP for any days
+            # Get the input datastreams:
+            datastreams: List[str] = pipeline.parameters.datastreams
+
+            # From storage, find the last datetime of the output datastream
+
+            # From storage, find any input dates that were modified since the last
+            # output.
+
+            # We will run the VAP for any days
             # that were changed/added.  For now we will run the full range of days.  Later
             # we can split into non-contiguous segments to improve processing.
 
