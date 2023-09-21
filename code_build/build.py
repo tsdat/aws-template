@@ -312,6 +312,7 @@ class TsdatPipelineBuild:
             self.s3_client.put_object(Bucket=bucket_name, Key=(subpath))
 
         # Create the S3 event trigger (this will replace any existing notification config)
+        print(f"notification configuration = {notification_configuration}")
         self.s3_client.put_bucket_notification_configuration(
             Bucket=bucket_name,
             NotificationConfiguration=notification_configuration,
