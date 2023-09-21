@@ -12,6 +12,9 @@ aws_repo_name: aws-template
 # AWS Information
 account_id: "332883119153"
 region: us-west-2
+input_bucket_name: ingest-buoy-dev-raw
+output_bucket_name: ingest-buoy-dev-output
+create_buckets: True # Should the stack create the buckets for you - pick False if they already exist
 
 # Create a CodeStar connection to allow AWS to have access to your GitHub repositories
 # https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html#connections-create-github-console
