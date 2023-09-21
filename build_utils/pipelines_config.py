@@ -63,6 +63,9 @@ class PipelinesConfig:
         self.account_id = config.get("account_id")
         self.region = config.get("region")
         self.github_codestar_arn = config.get("github_codestar_arn")
+        self.input_bucket_name = config.get("input_bucket_name")
+        self.output_bucket_name = config.get("output_bucket_name")
+        self.create_buckets = config.get("create_buckets")
 
         self.pipelines: Dict[str, PipelineConfig] = {}
         pipelines_to_deploy: List[dict] = config.get("pipelines", [])
@@ -91,16 +94,8 @@ class PipelinesConfig:
         return f"{self.base_name}-build"
 
     @property
-    def input_bucket_name(self):
-        return f"{self.base_name}-raw"
-
-    @property
     def input_bucket_arn(self):
         return f"arn:aws:s3:::{self.input_bucket_name}"
-
-    @property
-    def output_bucket_name(self):
-        return f"{self.base_name}-output"
 
     @property
     def ecr_repo_name(self):

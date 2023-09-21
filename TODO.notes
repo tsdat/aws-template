@@ -48,3 +48,5 @@ tsdat-cdk.code-workspace:  comment out the other folder paths
 
 rebuild images
 modify ingest-buoy fork
+
+merge aws-template dev branch to main branch

@@ -40,8 +40,9 @@ class CodePipelineStack(Stack):
 
         self.config: PipelinesConfig = config if config else PipelinesConfig()
 
-        # Create the input/output buckets
-        self.create_buckets()
+        # Create the input/output buckets if needed
+        if self.config.create_buckets:
+            self.create_buckets()
 
         # Create a role that will be used to execute lambda functions that gives them
         # read/write access to the input and output buckets
