@@ -221,7 +221,6 @@ def lambda_handler_old(event, context):
                 bucket_path = (
                     f"{bucket_path}/" if not bucket_path.endswith("/") else bucket_path
                 )
-                bucket_path = f"{bucket_path}*"
 
                 # We need to find the last modified date for this pipeline's output datastream.
                 last_modified: datetime = pipeline.storage.last_modified(
@@ -230,7 +229,17 @@ def lambda_handler_old(event, context):
 
                 # Then we need to query the input bucket/prefix for all files modified since
                 # last output time.  Then we run the pipeline same as below.
-                inputs = []
+                s3_client = boto3.client("s3")
+                paginator = s3_client.get_paginator("list_objects_v2")
+                pages = paginator.paginate(
+                    Bucket=pipelines_config.input_bucket_name, Prefix=bucket_path
+                )
+
+                for page in pages:
+                    for object in page["Contents"]:
+                        if object["LastModified"] > last_modified:
+                            print(f"Adding file to input: {object['Key']}")
+                            inputs.append(object["Key"])
 
             else:
                 inputs = trigger.input_files

@@ -84,10 +84,18 @@ class TsdatPipelineBuild:
         """
         # Build context is the pipeline repo root
         # Build file is code_build/docker/Dockerfile.base
+        # Copy over all the build-provided files that need to be built into base image
         source_folder = os.path.join(Env.AWS_REPO_PATH, "code_build", "docker")
         destination_folder = Env.PIPELINES_REPO_PATH
+        files = os.listdir(source_folder)
+        for file in files:
+            source_file = os.path.join(source_folder, file)
+            destination_file = os.path.join(destination_folder, file)
+            shutil.copy(source_file, destination_file)
 
-        # Copy over all the build-provided files that need to be built into base image
+        # We also need to copy all of the build utils into the pipelines repo
+        source_folder = os.path.join(Env.AWS_REPO_PATH, "utils")
+        destination_folder = os.path.join(Env.PIPELINES_REPO_PATH, "utils")
         files = os.listdir(source_folder)
         for file in files:
             source_file = os.path.join(source_folder, file)
@@ -212,7 +220,7 @@ class TsdatPipelineBuild:
         lambda_arn = response["FunctionArn"]
 
         # Wait for the Lambda function to be fully created before continuing
-        waiter = self.lambda_client.get_waiter("function_exists")
+        waiter = self.lambda_client.get_waiter("function_active_v2")
         waiter.wait(FunctionName=lambda_name)
 
         print(
@@ -288,7 +296,6 @@ class TsdatPipelineBuild:
             # Add the S3 event trigger
             subpath: str = run_config.input_bucket_path
             subpath = f"{subpath}/" if not subpath.endswith("/") else subpath
-            subpath = f"{subpath}*"
             notification_configuration["LambdaFunctionConfigurations"].append(
                 {
                     "Id": self.config.get_bucket_notification_id(
