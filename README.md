@@ -81,7 +81,8 @@ will see two folders:
 * .aws
 
 ### **6. Edit your pipelines_config.yml file**
-Do this from the VSCode window that is attached to the tsdat-cdk container.
+Do this from the VSCode window that is attached to the tsdat-cdk container.  Make
+sure to fill out all the sections (build parameters and pipelines).
 
 **Don't forget to copy the ARN of your CodeStar Connection** 
 
@@ -103,9 +104,26 @@ region = us-west-2
 
 ### **7. Edit your aws credentials**
 CDK requires that your AWS credentials be set in order to authenticate your CLI actions.
-From your VSCode window tha tis attached to the tsdat-cdk container
 
-From the VSCode Explorer, open .aws/credentials file
+**You will need to do this BEFORE you deploy your stack.**
+
+From your VSCode window tha tis attached to the tsdat-cdk container:
+* From the Explorer view, open .aws/credentials file.  
+* Then go to the AWS login page `https://pnnl.awsapps.com/start`
+* Then click $PROJECT_NAME -> Administrator -> Command line or programmatic access  (use whatever project you are admin for)
+* In the section, "Option 2: Manually add a profile to your AWS credentials file (Short-term credentials)",
+Click on the box to copy the text.
+* Paste it in  your credentials file under the [tsdat] profile (make sure to delete
+the line [xxxxx _AdministratorAccess])
+
+Your credentials file should look like this (with real values instead of the XXXX):
+```
+[tsdat]
+aws_access_key_id=XXXXXXX
+aws_secret_access_key=XXXXXX
+aws_session_token=XXXXXX
+```
+
 
 ### **8. Run the cdk bootstrap (Only need to do this the FIRST time you deploy)**
 ``` 
