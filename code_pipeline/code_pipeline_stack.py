@@ -170,9 +170,11 @@ class CodePipelineStack(Stack):
                     "s3:PutObject",
                     "s3:PutBucketNotification",
                     "s3:GetBucketNotification",
+                    "lambda:CreateFunction",
                     "lambda:UpdateFunctionConfiguration",
                     "lambda:AddPermission",
-                    "lambda:GetPolicy"
+                    "lambda:GetPolicy",
+                    "iam:PassRole",
                 ],
                 resources=["*"],
             )
