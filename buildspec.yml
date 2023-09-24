@@ -31,6 +31,8 @@ phases:
       - echo "Trigger = $TRIGGER"
       - echo "AWS_PIPELINE_NAME = $AWS_PIPELINE_NAME"
       - echo "CODEBUILD_RESOLVED_SOURCE_VERSION = $CODEBUILD_RESOLVED_SOURCE_VERSION"
+      - echo "Printing all environment variables"
+      - env
 
   build:
     commands:

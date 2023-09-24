@@ -47,6 +47,12 @@ docker-compose:  comment out the other folder mounts and environment params
 tsdat-cdk.code-workspace:  comment out the other folder paths
 
 rebuild images
-modify ingest-buoy fork
 
 merge aws-template dev branch to main branch
+
+The build is not correctly detecting the pipelines that changed.  Need to see if it's
+some env variables not getting set correctly.
+
+# Problem is this env variable is for the aws repo, NOT the pipelines repo
+CODEBUILD_RESOLVED_SOURCE_VERSION = 2121288948a3dac8c9a90c5d625aa6a31d18ec43
+
