@@ -3,44 +3,28 @@
 # Pipelines Repo
 - Add protection to the release branch
 - Decide what default branch to use for dev
-
--->If user creates a repo from the template, will it inherit the branches?
-
-
-# Code Build
-- Script to create run process lambda function and sns topics
-- Script to create cron lambda on schedule per config settings.
-- Lambda handler function to add to the docker lambda image - modify for cron, modify for vap
+I don't think we want to do this - it's up to the project to decide what to do with their
+branches.
 
 # MHKDR Integration
-Need a script to create a dataset in MHKDR and then set up a DataSync resource to keep the tsdat output bucket in sync with the MHKDR dataset bucket.
-DataSync can be created via CDK or boto3 (TBD).
+Need a script to create a dataset in MHKDR and then set up a DataSync resource to keep 
+the tsdat output bucket in sync with the MHKDR dataset bucket.  
+DataSync can be created via CDK or boto3 (TBD).  Ask Matt about this.
 
-
-rename code workspace file to tsdat-cdk
 
 # Testing Steps
-1. Create my forked repos in the carinatest org DONE
-2. Create codestar CodeStarConnection DONE
-3. test adding code pipeline to the Stack DONE
-4. test that the build will build the images correctly
-5. test creating lambda with file trigger by hand (including access to buckets and event trigger)
-6. test creating lambda with cron trigger by hand
-7. Add the create lambda function to the build
+5. Test that the hourly cron triggers correctly
+6. Test a real VAP
 
-# Maybe add create branches to the README Steps
-- See if branches are inherited from the template (they did not inherit when I forked).
-  If not, then add steps in the README to create the branches
-
-Do I have to add a web hook by hand in order for a commit to GitHub to trigger the
-AWS build?
-
-# Lambda Function
+# Lambda Logging
 - Fix lambda logging.  See if I can override this in the lambda container so we aren't 
 logging for every log statement in the code.
 
 
 # Code Build webhook filters  
+See if we can change the type of code build object that is created in the stack (e.g.,
+use code build only instead of code pipeline) so that we can set webhook filters to trigger
+the build on tagged release instead of push to branch.
 
 # Revert back build environment
 docker-compose:  comment out the other folder mounts and environment params
@@ -50,9 +34,7 @@ rebuild images
 
 merge aws-template dev branch to main branch
 
-The build is not correctly detecting the pipelines that changed.  Need to see if it's
-some env variables not getting set correctly.
-
-# Problem is this env variable is for the aws repo, NOT the pipelines repo
+# The build is not correctly detecting the pipelines that changed.  
+Problem is this env variable is for the aws repo, NOT the pipelines repo
 CODEBUILD_RESOLVED_SOURCE_VERSION = 2121288948a3dac8c9a90c5d625aa6a31d18ec43
 

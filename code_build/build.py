@@ -50,29 +50,69 @@ class TsdatPipelineBuild:
             commit.
 
         """
+
+        def get_revision_id(summary: dict):
+            revs = summary["sourceRevisions"]
+            for rev in revs:
+                if rev["actionName"] == "pipelines-source-action":
+                    return rev["revisionId"]
+            return None
+
+        # First get the aws pipeline executions so we can find the current and previous
+        # commit hashes for the pipelines repo.
         changed_pipelines = []
-        command = (
-            f"cd {Env.PIPELINES_REPO_PATH} &&"
-            f" {Env.AWS_REPO_PATH}/code_build/find_modified_pipelines.sh"
-        )
+        code_pipeline_name = Env.AWS_PIPELINE_NAME
+        command = [
+            "aws",
+            "codepipeline",
+            "list-pipeline-executions",
+            "--pipeline-name",
+            code_pipeline_name,
+        ]
+        with open("out.json", "w") as outfile:
+            subprocess.run(command, stdout=outfile)
 
-        completed_process = subprocess.run(
-            command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+        with open("out.json") as json_file:
+            executions = json.load(json_file)
+            summaries = executions["pipelineExecutionSummaries"]
+            if len(summaries) == 1:
+                # This is the first time this pipeline has ever built, so we are
+                # going to build all the tsdat pipelines
+                changed_pipelines = list(self.config.pipelines.keys())
 
-        if completed_process.returncode == 0:
-            output = completed_process.stdout
-            changed_pipelines = (
-                output.strip().split()
-            )  # Parse the newline separated text into a list
-            print(changed_pipelines)
+            else:
+                # The first summary is always the current code revisions
+                current_hash = get_revision_id(summaries[0])
+                previous_hash = None
 
-        else:
-            raise Exception(f"Failed to perform git diff: {completed_process.stderr}")
+                # Then we loop through the rest of the executions to find the most
+                # recent one that succeeded, and use that one for the previous commit hash
+                for summary in summaries[1:]:
+                    if summary["status"] == "Succeeded":
+                        previous_hash = get_revision_id(summary)
+                        break
+
+                # If we don't have a previous one that succeeded, then we build all
+                if not previous_hash:
+                    changed_pipelines = list(self.config.pipelines.keys())
+                else:
+                    # Do a git diff to find out the pipelines that changed
+                    command = [
+                        f"{Env.AWS_REPO_PATH}/code_build/find_modified_pipelines.sh",
+                        Env.PIPELINES_REPO_PATH,
+                        current_hash,
+                        previous_hash,
+                    ]
+                    output = subprocess.check_output(command)
+                    changed_pipelines = (
+                        output.strip().split()
+                    )  # Parse the newline separated text into a list
+
+                    # result is a byte string, so we have to convert to regular string
+                    for i, pipeline in enumerate(changed_pipelines):
+                        changed_pipelines[i] = pipeline.decode("utf-8")
+
+                    print(changed_pipelines)
 
         return changed_pipelines
 
