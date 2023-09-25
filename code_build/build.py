@@ -437,13 +437,17 @@ class TsdatPipelineBuild:
                 statement_id = self.config.get_cron_trigger_statement_id(
                     pipeline_config.name, run_config.id
                 )
-                self.lambda_client.add_permission(
-                    FunctionName=lambda_arn,
-                    StatementId=statement_id,
-                    Action="lambda:InvokeFunction",
-                    Principal="events.amazonaws.com",
-                    SourceArn=rule_arn,
-                )
+                try:
+                    self.lambda_client.add_permission(
+                        FunctionName=lambda_arn,
+                        StatementId=statement_id,
+                        Action="lambda:InvokeFunction",
+                        Principal="events.amazonaws.com",
+                        SourceArn=rule_arn,
+                    )
+                except self.lambda_client.exceptions.ResourceConflictException:
+                    # This means the permission already exists
+                    pass
 
                 print(
                     f"Cron trigger rule set up for pipeline{pipeline_config.name}, run"
