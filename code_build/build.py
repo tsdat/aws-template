@@ -209,14 +209,6 @@ class TsdatPipelineBuild:
             else:
                 self.update_lambda(pipeline_config, run_config)
 
-            # Update cron trigger (will disable if not used)
-            self.add_or_update_schedule(pipeline_config, run_config)
-
-        # If the pipeline is an S3 trigger, we have to set the notification policy all
-        # in one big block
-        if pipeline_config.trigger == Trigger.S3:
-            self.add_or_update_s3_triggers(pipeline_config)
-
     def get_lambda(
         self, pipeline_config: PipelineConfig, run_config: RunConfig
     ) -> Optional[dict]:
@@ -319,9 +311,9 @@ class TsdatPipelineBuild:
         except Exception:
             return False
 
-    def add_or_update_s3_triggers(self, pipeline_config: PipelineConfig):
+    def add_or_update_s3_triggers(self):
         """
-        For the given pipeline config, add an S3 notification configuration to trigger
+        For all pielines, add a single S3 notification configuration to trigger
         the respective lambdas depending upon the path.
 
         """
@@ -329,47 +321,51 @@ class TsdatPipelineBuild:
         notification_configuration = {"LambdaFunctionConfigurations": []}
         print(f"Setting up S3 lambda triggers for bucket {bucket_name}.")
 
-        for run_config in pipeline_config.configs.values():
-            lambda_arn = self.config.get_lambda_arn(pipeline_config.name, run_config.id)
-
-            # Give the S3 input bucket permission to invoke the lambda function
-            statement_id = self.config.get_bucket_trigger_statement_id(
-                pipeline_config.name, run_config.id
-            )
-            if not self.s3_policy_exists(pipeline_config, run_config):
-                self.lambda_client.add_permission(
-                    FunctionName=lambda_arn,
-                    StatementId=statement_id,
-                    Action="lambda:InvokeFunction",
-                    Principal="s3.amazonaws.com",
-                    SourceArn=self.config.input_bucket_arn,
+        for pipeline_config in self.config.pipelines.values():
+            for run_config in pipeline_config.configs.values():
+                lambda_arn = self.config.get_lambda_arn(
+                    pipeline_config.name, run_config.id
                 )
 
-            # Add the S3 event trigger
-            subpath: str = run_config.input_bucket_path
-            subpath = f"{subpath}/" if not subpath.endswith("/") else subpath
-            notification_configuration["LambdaFunctionConfigurations"].append(
-                {
-                    "Id": self.config.get_bucket_notification_id(
+                # Add the S3 event trigger
+                if pipeline_config.trigger == Trigger.S3:
+                    # Give the S3 input bucket permission to invoke the lambda function
+                    statement_id = self.config.get_bucket_trigger_statement_id(
                         pipeline_config.name, run_config.id
-                    ),
-                    "LambdaFunctionArn": lambda_arn,
-                    "Events": ["s3:ObjectCreated:*"],
-                    "Filter": {
-                        "Key": {
-                            "FilterRules": [
-                                {"Name": "prefix", "Value": subpath},
-                            ]
-                        }
-                    },
-                },
-            )
+                    )
+                    if not self.s3_policy_exists(pipeline_config, run_config):
+                        self.lambda_client.add_permission(
+                            FunctionName=lambda_arn,
+                            StatementId=statement_id,
+                            Action="lambda:InvokeFunction",
+                            Principal="s3.amazonaws.com",
+                            SourceArn=self.config.input_bucket_arn,
+                        )
 
-            # Make sure the bucket folder exists (so we can see it in the UI)
-            subpath: str = run_config.input_bucket_path
-            subpath = f"{subpath}/" if not subpath.endswith("/") else subpath
-            if not self.s3_folder_exists(bucket_name, subpath):
-                self.s3_client.put_object(Bucket=bucket_name, Key=(subpath))
+                    subpath: str = run_config.input_bucket_path
+                    subpath = f"{subpath}/" if not subpath.endswith("/") else subpath
+                    notification_configuration["LambdaFunctionConfigurations"].append(
+                        {
+                            "Id": self.config.get_bucket_notification_id(
+                                pipeline_config.name, run_config.id
+                            ),
+                            "LambdaFunctionArn": lambda_arn,
+                            "Events": ["s3:ObjectCreated:*"],
+                            "Filter": {
+                                "Key": {
+                                    "FilterRules": [
+                                        {"Name": "prefix", "Value": subpath},
+                                    ]
+                                }
+                            },
+                        },
+                    )
+
+                    # Make sure the bucket folder exists (so we can see it in the UI)
+                    subpath: str = run_config.input_bucket_path
+                    subpath = f"{subpath}/" if not subpath.endswith("/") else subpath
+                    if not self.s3_folder_exists(bucket_name, subpath):
+                        self.s3_client.put_object(Bucket=bucket_name, Key=(subpath))
 
         # Create the S3 event trigger (this will replace any existing notification config)
         print(f"notification configuration = {notification_configuration}")
@@ -379,71 +375,82 @@ class TsdatPipelineBuild:
         )
         print(f"S3 event trigger set up for bucket {self.config.input_bucket_arn}")
 
-    def add_or_update_schedule(
-        self, pipeline_config: PipelineConfig, run_config: RunConfig
-    ):
+    def add_or_update_cron_schedules(self):
         """Update the cron rules for to trigger the lambda function for the
         given pipeline and config.
 
         """
-        lambda_arn = self.config.get_lambda_arn(pipeline_config.name, run_config.id)
+        for pipeline_config in self.config.pipelines.values():
+            for run_config in pipeline_config.configs.values():
+                lambda_arn = self.config.get_lambda_arn(
+                    pipeline_config.name, run_config.id
+                )
 
-        # TODO: Should we schedule all crons at same time, or should we stagger them?
-        # Should we give user control to specify exact cron expression?
-        cron_expression = pipeline_config.cron_expression
+                lambda_arn = self.config.get_lambda_arn(
+                    pipeline_config.name, run_config.id
+                )
 
-        # Create an eventbridge event rule
-        rule_name = self.config.get_cron_rule_name(pipeline_config.name, run_config.id)
+                # TODO: Should we schedule all crons at same time, or should we stagger them?
+                # Should we give user control to specify exact cron expression?
+                cron_expression = pipeline_config.cron_expression
 
-        # Check if the rule exists:
-        rule_exists = True
-        try:
-            response = self.events_client.describe_rule(Name=rule_name)
-        except self.events_client.exceptions.ResourceNotFoundException as e:
-            rule_exists = False
+                # Create an eventbridge event rule
+                rule_name = self.config.get_cron_rule_name(
+                    pipeline_config.name, run_config.id
+                )
 
-        # put_rule will create or update the rule.  We are always creating the rule
-        # so we can switch from Cron to S3 trigger if needed.  If the trigger is S3, then
-        # we will disable the rule, so nothing happens.
-        state = "ENABLED" if pipeline_config.trigger == Trigger.Cron else "DISABLED"
-        print(f"Updating cron rule for {lambda_arn} {cron_expression} {state}")
-        response = self.events_client.put_rule(
-            Name=rule_name, ScheduleExpression=cron_expression, State=state
-        )
-        rule_arn = response[
-            "RuleArn"
-        ]  # make sure this is the right field in the response
+                # Check if the rule exists:
+                rule_exists = True
+                try:
+                    response = self.events_client.describe_rule(Name=rule_name)
+                except self.events_client.exceptions.ResourceNotFoundException as e:
+                    rule_exists = False
 
-        # Add the Lambda function as a target for the rule
-        # We only need to set the target and permissions if the rule doesn't already exist
-        if not rule_exists:
-            print(f"Updating rule target for {lambda_arn}")
-            response = self.events_client.put_targets(
-                Rule=rule_name,
-                Targets=[
-                    {
-                        "Id": "1",
-                        "Arn": lambda_arn,
-                    }
-                ],
-            )
+                # put_rule will create or update the rule.  We are always creating the rule
+                # so we can switch from Cron to S3 trigger if needed.  If the trigger is S3, then
+                # we will disable the rule, so nothing happens.
+                state = (
+                    "ENABLED" if pipeline_config.trigger == Trigger.Cron else "DISABLED"
+                )
+                print(f"Updating cron rule for {lambda_arn} {cron_expression} {state}")
+                response = self.events_client.put_rule(
+                    Name=rule_name, ScheduleExpression=cron_expression, State=state
+                )
+                rule_arn = response[
+                    "RuleArn"
+                ]  # make sure this is the right field in the response
 
-            # Now add permission for our lambda to be triggered by the cron rule
-            statement_id = self.config.get_cron_trigger_statement_id(
-                pipeline_config.name, run_config.id
-            )
-            self.lambda_client.add_permission(
-                FunctionName=lambda_arn,
-                StatementId=statement_id,
-                Action="lambda:InvokeFunction",
-                Principal="events.amazonaws.com",
-                SourceArn=rule_arn,
-            )
+                # Add the Lambda function as a target for the rule
+                # We only need to set the target and permissions if the rule doesn't already exist
+                if not rule_exists:
+                    print(f"Updating rule target for {lambda_arn}")
+                    response = self.events_client.put_targets(
+                        Rule=rule_name,
+                        Targets=[
+                            {
+                                "Id": "1",
+                                "Arn": lambda_arn,
+                            }
+                        ],
+                    )
 
-        print(
-            f"Cron trigger rule set up for pipeline{pipeline_config.name}, run"
-            f" {run_config.id}.  Schedule is: {cron_expression}.  Rule arn = {rule_arn}"
-        )
+                    # Now add permission for our lambda to be triggered by the cron rule
+                    statement_id = self.config.get_cron_trigger_statement_id(
+                        pipeline_config.name, run_config.id
+                    )
+                    self.lambda_client.add_permission(
+                        FunctionName=lambda_arn,
+                        StatementId=statement_id,
+                        Action="lambda:InvokeFunction",
+                        Principal="events.amazonaws.com",
+                        SourceArn=rule_arn,
+                    )
+
+                print(
+                    f"Cron trigger rule set up for pipeline{pipeline_config.name}, run"
+                    f" {run_config.id}.  Schedule is: {cron_expression}.  Rule arn ="
+                    f" {rule_arn}"
+                )
 
     def build(self):
         print(f"Building CodeBuild pipeline: {Env.AWS_PIPELINE_NAME}")
@@ -476,3 +483,10 @@ class TsdatPipelineBuild:
             )
             self.build_pipeline_docker_image(tsdat_pipeline_name)
             self.deploy_lambda(pipeline_config)
+
+        # If the pipeline is an S3 trigger, we have to set the notification policy all
+        # in one big block
+        self.add_or_update_s3_triggers()
+
+        # Update cron triggers for all pipelines (will disable if not used)
+        self.add_or_update_cron_schedules()
