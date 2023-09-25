@@ -105,14 +105,14 @@ class TsdatPipelineBuild:
                         current_hash,
                         previous_hash,
                     ]
-                    output = subprocess.check_output(command)
-                    changed_pipelines = (
-                        output.strip().split()
-                    )  # Parse the newline separated text into a list
+                    subprocess.check_output(command)
 
-                    # result is a byte string, so we have to convert to regular string
-                    for i, pipeline in enumerate(changed_pipelines):
-                        changed_pipelines[i] = pipeline.decode("utf-8")
+                    # Parse the output
+                    with open("/tmp/changed_pipelines", "r") as file:
+                        output = file.read()
+                        changed_pipelines = (
+                            output.strip().split()
+                        )  # Parse the newline separated text into a list
 
                     print(f"changed pipelines = {changed_pipelines}")
 
