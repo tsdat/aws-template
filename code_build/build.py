@@ -270,6 +270,10 @@ class TsdatPipelineBuild:
             Environment=self._get_lambda_env(pipeline_config, run_config),
         )
 
+        # Wait for the update to finish before trying to update the code
+        waiter = self.lambda_client.get_waiter("function_updated")
+        waiter.wait(FunctionName=lambda_name)
+
         # We also have to update the code to make lambda load our new image and not
         # keep the cached one.
         image_uri = self.config.get_image_uri(pipeline_config.name)
@@ -391,11 +395,8 @@ class TsdatPipelineBuild:
                     pipeline_config.name, run_config.id
                 )
 
-                lambda_arn = self.config.get_lambda_arn(
-                    pipeline_config.name, run_config.id
-                )
+                # TODO: if lambda function doesn't exist, then continue
 
-                # TODO: Should we schedule all crons at same time, or should we stagger them?
                 # Should we give user control to specify exact cron expression?
                 cron_expression = pipeline_config.cron_expression
 

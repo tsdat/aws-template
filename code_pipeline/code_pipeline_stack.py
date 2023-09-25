@@ -56,7 +56,7 @@ class CodePipelineStack(Stack):
 
         # TODO: May need an sns topic for build alert messages
 
-    def get_github_source(self, repo, output_name):
+    def get_github_source(self, repo, output_name, trigger_on_push=True):
         """Create the GitHub source resource for a code pipeline via a CodeStar connection.
         The Artifact is the object used in the build.  The action is how the code is
         pulled from GitHub.
@@ -88,7 +88,7 @@ class CodePipelineStack(Stack):
             output=output,
             connection_arn=self.config.github_codestar_arn,
             branch=Env.BRANCH,
-            trigger_on_push=True,
+            trigger_on_push=trigger_on_push,
             code_build_clone_output=True,  # Set this so you get a .git folder!
         )
         return (output, action)
@@ -111,7 +111,7 @@ class CodePipelineStack(Stack):
             self.config.pipelines_repo_name, "pipelines"
         )
         aws_build_artifact, aws_build_source_action = self.get_github_source(
-            self.config.aws_repo_name, "aws_build"
+            self.config.aws_repo_name, "aws_build", trigger_on_push=False
         )
 
         # Create a project to wrap the code pipeline and code build.  It will run from the aws-template repository.
@@ -185,6 +185,7 @@ class CodePipelineStack(Stack):
                     "events:DescribeRule",
                     "events:PutRule",
                     "events:PutTargets",
+                    "lambda:UpdateFunctionCode",
                 ],
                 resources=["*"],
             )
