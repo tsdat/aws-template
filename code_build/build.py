@@ -7,7 +7,6 @@ import traceback
 from typing import List, Optional
 
 import boto3
-from botocore.exceptions import ClientError
 
 from build_utils.constants import Env, PipelineType, Trigger, Schedule
 from build_utils.pipelines_config import PipelinesConfig, PipelineConfig, RunConfig
@@ -244,9 +243,7 @@ class TsdatPipelineBuild:
             FunctionName=lambda_name,
             PackageType="Image",
             Role=Env.LAMBDA_ROLE_ARN,
-            Code={
-                "ImageUri": image_uri,
-            },
+            Code={"ImageUri": image_uri},
             Environment=self._get_lambda_env(pipeline_config, run_config),
             Timeout=120,
             MemorySize=1024,
@@ -268,17 +265,17 @@ class TsdatPipelineBuild:
         (The only thing we need to change are the environment variables.)
         """
         lambda_name = self.config.get_lambda_name(pipeline_config.name, run_config.id)
-        image_uri = self.config.get_image_uri(pipeline_config.name)
         response = self.lambda_client.update_function_configuration(
             FunctionName=lambda_name,
-            PackageType="Image",
-            Role=Env.LAMBDA_ROLE_ARN,
-            Code={
-                "ImageUri": image_uri,
-            },
             Environment=self._get_lambda_env(pipeline_config, run_config),
-            Timeout=120,
-            MemorySize=1024,
+        )
+
+        # We also have to update the code to make lambda load our new image and not
+        # keep the cached one.
+        image_uri = self.config.get_image_uri(pipeline_config.name)
+        response = self.lambda_client.update_function_code(
+            FunctionName=lambda_name,
+            ImageUri=image_uri,
         )
 
         print(
