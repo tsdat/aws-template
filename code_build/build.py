@@ -105,11 +105,13 @@ class TsdatPipelineBuild:
                         current_hash,
                         previous_hash,
                     ]
-                    subprocess.check_output(command)
+                    output = subprocess.check_output(command)
+                    print(f"Output of diff command = {output}")
 
                     # Parse the output
                     with open("/tmp/changed_pipelines", "r") as file:
                         output = file.read()
+                        print(f"Output of diff command = {output}")
                         changed_pipelines = (
                             output.strip().split()
                         )  # Parse the newline separated text into a list
@@ -196,6 +198,9 @@ class TsdatPipelineBuild:
             f"Deploying lambdas and associated resources for pipeline: {pipeline_name}"
         )
         run_config: RunConfig
+
+        # TODO: We need to set the S3 and cron triggers every time.  If the pipeline
+        # does not use one or the other, then they need to be erased.
 
         # We are creating lambdas for each config so that we can properly pass
         # relevant environment variables and control the S3 triggers
@@ -401,6 +406,8 @@ class TsdatPipelineBuild:
             rule_exists = False
 
         # put_rule will create or update the rule
+        print(f"Updating cron rule for {lambda_arn} {cron_expression}")
+        # TODO: if this pipeline is not cron then set state to DISABLED
         response = self.events_client.put_rule(
             Name=rule_name, ScheduleExpression=cron_expression, State="ENABLED"
         )
@@ -411,6 +418,7 @@ class TsdatPipelineBuild:
         # Add the Lambda function as a target for the rule
         # We only need to set the target and permissions if the rule doesn't already exist
         if not rule_exists:
+            print(f"Updating rule target for {lambda_arn}")
             response = self.events_client.put_targets(
                 Rule=rule_name,
                 Targets=[

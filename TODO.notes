@@ -38,3 +38,6 @@ merge aws-template dev branch to main branch
 Problem is this env variable is for the aws repo, NOT the pipelines repo
 CODEBUILD_RESOLVED_SOURCE_VERSION = 2121288948a3dac8c9a90c5d625aa6a31d18ec43
 
+# Switching trigger types (cron vs s3) doesn't register
+Need to erase the previous trigger before setting the new one.
+
