@@ -101,7 +101,7 @@ class TsdatPipelineBuild:
                     print(f"previous hash = {previous_hash}")
                     command = [
                         f"{Env.AWS_REPO_PATH}/code_build/find_modified_pipelines.sh",
-                        "/tmp/PIPELINES_SOURCE",
+                        Env.PIPELINES_REPO_PATH,
                         current_hash,
                         previous_hash,
                     ]
@@ -199,9 +199,6 @@ class TsdatPipelineBuild:
         )
         run_config: RunConfig
 
-        # TODO: We need to set the S3 and cron triggers every time.  If the pipeline
-        # does not use one or the other, then they need to be erased.
-
         # We are creating lambdas for each config so that we can properly pass
         # relevant environment variables and control the S3 triggers
         for config_id, run_config in pipeline_config.configs.items():
@@ -212,8 +209,8 @@ class TsdatPipelineBuild:
             else:
                 self.update_lambda(pipeline_config, run_config)
 
-            if pipeline_config.trigger == Trigger.Cron:
-                self.add_or_update_schedule(pipeline_config, run_config)
+            # Update cron trigger (will disable if not used)
+            self.add_or_update_schedule(pipeline_config, run_config)
 
         # If the pipeline is an S3 trigger, we have to set the notification policy all
         # in one big block
@@ -405,11 +402,13 @@ class TsdatPipelineBuild:
         except self.events_client.exceptions.ResourceNotFoundException as e:
             rule_exists = False
 
-        # put_rule will create or update the rule
-        print(f"Updating cron rule for {lambda_arn} {cron_expression}")
-        # TODO: if this pipeline is not cron then set state to DISABLED
+        # put_rule will create or update the rule.  We are always creating the rule
+        # so we can switch from Cron to S3 trigger if needed.  If the trigger is S3, then
+        # we will disable the rule, so nothing happens.
+        state = "ENABLED" if pipeline_config.trigger == Trigger.Cron else "DISABLED"
+        print(f"Updating cron rule for {lambda_arn} {cron_expression} {state}")
         response = self.events_client.put_rule(
-            Name=rule_name, ScheduleExpression=cron_expression, State="ENABLED"
+            Name=rule_name, ScheduleExpression=cron_expression, State=state
         )
         rule_arn = response[
             "RuleArn"
