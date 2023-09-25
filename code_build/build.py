@@ -476,13 +476,19 @@ class TsdatPipelineBuild:
             )
             tsdat_pipelines_to_build = self.find_changed_tsdat_pipelines()
 
+            # TODO: For every pipeline in the file, check to see if it has been deployed.
+            # If not, then add it to the list.
+
         for tsdat_pipeline_name in tsdat_pipelines_to_build:
             print(f"Building Tsdat pipeline: {tsdat_pipeline_name}")
             pipeline_config: PipelineConfig = self.config.pipelines.get(
                 tsdat_pipeline_name
             )
-            self.build_pipeline_docker_image(tsdat_pipeline_name)
-            self.deploy_lambda(pipeline_config)
+            # If the config is null, then this pipeline isn't in the pipelines_config.yml
+            # yet.
+            if pipeline_config:
+                self.build_pipeline_docker_image(tsdat_pipeline_name)
+                self.deploy_lambda(pipeline_config)
 
         # If the pipeline is an S3 trigger, we have to set the notification policy all
         # in one big block

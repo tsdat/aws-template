@@ -60,9 +60,7 @@ github_codestar_arn: arn:aws:codestar-connections:us-east-2:332883119153:connect
 pipelines:
   - name: lidar
     type: Ingest
-    #trigger: S3
-    trigger: Cron
-    schedule: Hourly
+    trigger: S3
 
     configs:
       humboldt:
@@ -76,10 +74,10 @@ pipelines:
       #   input_bucket_path: rt1/wake
       #   config_file_path: pipelines/lidar/config/pipeline_rt1_wake.yaml
 
-  # - name: vap1
-  #   type: VAP
-  #   trigger: Cron
-  #   schedule: Daily
-  #   configs:
-  #     morro:
-  #       config_file_path: pipelines/lidar/config/pipeline_morro.yaml
+  - name: lidar_vap
+    type: VAP
+    trigger: Cron
+    schedule: Hourly
+    configs:
+      humboldt:
+        config_file_path: pipelines/lidar_vap/config/pipeline.yaml
