@@ -182,6 +182,9 @@ class CodePipelineStack(Stack):
                     "iam:PassRole",
                     "codecommit:GitPull",
                     "codecommit:GetRepository",
+                    "events:DescribeRule",
+                    "events:PutRule",
+                    "events:PutTargets",
                 ],
                 resources=["*"],
             )

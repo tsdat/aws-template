@@ -41,3 +41,10 @@ CODEBUILD_RESOLVED_SOURCE_VERSION = 2121288948a3dac8c9a90c5d625aa6a31d18ec43
 # Switching trigger types (cron vs s3) doesn't register
 Need to erase the previous trigger before setting the new one.
 
+# Let users override storage.yaml file
+Users need to specify the storage yaml path in aws template and the corresponding
+storage file in the pipelines repo. Then if specified build will replace the pipelines
+storage with the aws storage.
+
+
+aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin  332883119153.dkr.ecr.us-west-2.amazonaws.com

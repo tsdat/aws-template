@@ -268,9 +268,17 @@ class TsdatPipelineBuild:
         (The only thing we need to change are the environment variables.)
         """
         lambda_name = self.config.get_lambda_name(pipeline_config.name, run_config.id)
+        image_uri = self.config.get_image_uri(pipeline_config.name)
         response = self.lambda_client.update_function_configuration(
             FunctionName=lambda_name,
+            PackageType="Image",
+            Role=Env.LAMBDA_ROLE_ARN,
+            Code={
+                "ImageUri": image_uri,
+            },
             Environment=self._get_lambda_env(pipeline_config, run_config),
+            Timeout=120,
+            MemorySize=1024,
         )
 
         print(
@@ -399,13 +407,6 @@ class TsdatPipelineBuild:
                     pipeline_config.name, run_config.id
                 )
 
-                # Check if the rule exists:
-                rule_exists = True
-                try:
-                    response = self.events_client.describe_rule(Name=rule_name)
-                except self.events_client.exceptions.ResourceNotFoundException as e:
-                    rule_exists = False
-
                 # put_rule will create or update the rule.  We are always creating the rule
                 # so we can switch from Cron to S3 trigger if needed.  If the trigger is S3, then
                 # we will disable the rule, so nothing happens.
@@ -421,30 +422,28 @@ class TsdatPipelineBuild:
                 ]  # make sure this is the right field in the response
 
                 # Add the Lambda function as a target for the rule
-                # We only need to set the target and permissions if the rule doesn't already exist
-                if not rule_exists:
-                    print(f"Updating rule target for {lambda_arn}")
-                    response = self.events_client.put_targets(
-                        Rule=rule_name,
-                        Targets=[
-                            {
-                                "Id": "1",
-                                "Arn": lambda_arn,
-                            }
-                        ],
-                    )
+                print(f"Updating rule target for {lambda_arn}")
+                response = self.events_client.put_targets(
+                    Rule=rule_name,
+                    Targets=[
+                        {
+                            "Id": "1",
+                            "Arn": lambda_arn,
+                        }
+                    ],
+                )
 
-                    # Now add permission for our lambda to be triggered by the cron rule
-                    statement_id = self.config.get_cron_trigger_statement_id(
-                        pipeline_config.name, run_config.id
-                    )
-                    self.lambda_client.add_permission(
-                        FunctionName=lambda_arn,
-                        StatementId=statement_id,
-                        Action="lambda:InvokeFunction",
-                        Principal="events.amazonaws.com",
-                        SourceArn=rule_arn,
-                    )
+                # Now add permission for our lambda to be triggered by the cron rule
+                statement_id = self.config.get_cron_trigger_statement_id(
+                    pipeline_config.name, run_config.id
+                )
+                self.lambda_client.add_permission(
+                    FunctionName=lambda_arn,
+                    StatementId=statement_id,
+                    Action="lambda:InvokeFunction",
+                    Principal="events.amazonaws.com",
+                    SourceArn=rule_arn,
+                )
 
                 print(
                     f"Cron trigger rule set up for pipeline{pipeline_config.name}, run"
