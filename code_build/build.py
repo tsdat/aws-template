@@ -97,6 +97,8 @@ class TsdatPipelineBuild:
                     changed_pipelines = list(self.config.pipelines.keys())
                 else:
                     # Do a git diff to find out the pipelines that changed
+                    print(f"current hash = {current_hash}")
+                    print(f"previous hash = {previous_hash}")
                     command = [
                         f"{Env.AWS_REPO_PATH}/code_build/find_modified_pipelines.sh",
                         Env.PIPELINES_REPO_PATH,
@@ -112,7 +114,7 @@ class TsdatPipelineBuild:
                     for i, pipeline in enumerate(changed_pipelines):
                         changed_pipelines[i] = pipeline.decode("utf-8")
 
-                    print(changed_pipelines)
+                    print(f"changed pipelines = {changed_pipelines}")
 
         return changed_pipelines
 
