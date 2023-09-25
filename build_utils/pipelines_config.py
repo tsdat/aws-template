@@ -102,6 +102,10 @@ class PipelinesConfig:
         return self.base_name
 
     @property
+    def pipelines_repo_url(self):
+        return f"git@github.com:{self.github_org}/{self.pipelines_repo_name}.git"
+
+    @property
     def ecr_repo(self):
         # 332883119153.dkr.ecr.us-west-2.amazonaws.com/ingest-buoy-dev
         return f"{self.account_id}.dkr.ecr.{self.region}.amazonaws.com/{self.ecr_repo_name}"

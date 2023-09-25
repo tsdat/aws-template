@@ -101,7 +101,7 @@ class TsdatPipelineBuild:
                     print(f"previous hash = {previous_hash}")
                     command = [
                         f"{Env.AWS_REPO_PATH}/code_build/find_modified_pipelines.sh",
-                        Env.PIPELINES_REPO_PATH,
+                        "/tmp/PIPELINES_SOURCE",
                         current_hash,
                         previous_hash,
                     ]
