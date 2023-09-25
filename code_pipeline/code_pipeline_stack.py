@@ -89,6 +89,7 @@ class CodePipelineStack(Stack):
             connection_arn=self.config.github_codestar_arn,
             branch=Env.BRANCH,
             trigger_on_push=True,
+            code_build_clone_output=True,  # Set this so you get a .git folder!
         )
         return (output, action)
 
@@ -180,6 +181,7 @@ class CodePipelineStack(Stack):
                     "lambda:GetPolicy",
                     "iam:PassRole",
                     "codecommit:GitPull",
+                    "codecommit:GetRepository",
                 ],
                 resources=["*"],
             )

@@ -32,11 +32,6 @@ phases:
       - export TRIGGER=$(aws codepipeline list-pipeline-executions --pipeline $AWS_PIPELINE_NAME | jq -r ".pipelineExecutionSummaries[]|select(.pipelineExecutionId==\"$ID\")|.trigger.triggerType")
       - echo "Trigger = $TRIGGER"
 
-      # Clone the pipelines source (so we can do git diff).  By default the source folders
-      # do not have .git folder :(
-      - mkdir /tmp/PIPELINES_SOURCE
-      - git clone --single-branch --branch $BRANCH $PIPELINES_REPO_URL /tmp/PIPELINES_SOURCE
-
   build:
     commands:
       - echo Build started on `date`
