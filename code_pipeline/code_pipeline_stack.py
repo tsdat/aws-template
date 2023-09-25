@@ -136,6 +136,9 @@ class CodePipelineStack(Stack):
                 "PIPELINES_REPO_NAME": BuildEnvironmentVariable(
                     value=self.config.pipelines_repo_name
                 ),
+                "PIPELINES_REPO_URL": BuildEnvironmentVariable(
+                    value=self.config.pipelines_repo_url
+                ),
                 "AWS_PIPELINE_NAME": BuildEnvironmentVariable(value=pipeline_name),
                 "BRANCH": BuildEnvironmentVariable(value=Env.BRANCH),
                 # This ARN is not one we can dynamically determine, so we have to pass it in
@@ -176,6 +179,7 @@ class CodePipelineStack(Stack):
                     "lambda:AddPermission",
                     "lambda:GetPolicy",
                     "iam:PassRole",
+                    "codecommit:GitPull",
                 ],
                 resources=["*"],
             )

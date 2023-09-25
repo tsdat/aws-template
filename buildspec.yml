@@ -8,6 +8,8 @@ version: 0.2
 
 # Per https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-env-vars.html
 # use $CODEBUILD_INITIATOR as it provides the unique entity that started the build
+env:
+  git-credential-helper: yes
 
 phases:
   install:
@@ -29,7 +31,11 @@ phases:
       - export ID=$(aws codepipeline get-pipeline-state --region $AWS_DEFAULT_REGION --name $AWS_PIPELINE_NAME --query 'stageStates[?actionStates[?latestExecution.externalExecutionId==`'${CODEBUILD_BUILD_ID}'`]].latestExecution.pipelineExecutionId' --output text)
       - export TRIGGER=$(aws codepipeline list-pipeline-executions --pipeline $AWS_PIPELINE_NAME | jq -r ".pipelineExecutionSummaries[]|select(.pipelineExecutionId==\"$ID\")|.trigger.triggerType")
       - echo "Trigger = $TRIGGER"
-      - ls -al $CODEBUILD_SRC_DIR_pipelines
+
+      # Clone the pipelines source (so we can do git diff).  By default the source folders
+      # do not have .git folder :(
+      - mkdir /tmp/PIPELINES_SOURCE
+      - git clone --single-branch --branch $BRANCH $PIPELINES_REPO_URL /tmp/PIPELINES_SOURCE
 
   build:
     commands:
