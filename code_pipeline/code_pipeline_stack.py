@@ -177,6 +177,8 @@ class CodePipelineStack(Stack):
                     "s3:GetBucketNotification",
                     "lambda:CreateFunction",
                     "lambda:UpdateFunctionConfiguration",
+                    "lambda:GetFunctionConfiguration",
+                    "lambda:UpdateFunctionCode",
                     "lambda:AddPermission",
                     "lambda:GetPolicy",
                     "iam:PassRole",
@@ -185,7 +187,6 @@ class CodePipelineStack(Stack):
                     "events:DescribeRule",
                     "events:PutRule",
                     "events:PutTargets",
-                    "lambda:UpdateFunctionCode",
                 ],
                 resources=["*"],
             )
