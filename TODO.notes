@@ -1,50 +1,26 @@
-
-
 # Pipelines Repo
 - Add protection to the release branch
-- Decide what default branch to use for dev
-I don't think we want to do this - it's up to the project to decide what to do with their
-branches.
+I don't think we want to do this - it's up to the project to decide how to manage
+their branches.
 
 # MHKDR Integration
 Need a script to create a dataset in MHKDR and then set up a DataSync resource to keep 
 the tsdat output bucket in sync with the MHKDR dataset bucket.  
-DataSync can be created via CDK or boto3 (TBD).  Ask Matt about this.
-
-
-# Testing Steps
-5. Test that the hourly cron triggers correctly
-6. Test a real VAP
+DataSync can be created via CDK or boto3 (TBD). 
 
 # Lambda Logging
-- Fix lambda logging.  See if I can override this in the lambda container so we aren't 
-logging for every log statement in the code.
-
+- Fix lambda logging - it appears our DelayedJSONStreamHandler isn't working like we 
+want.  See if we can override this in the lambda container so we aren't 
+creating a cloudwatch entry for every log statement in the code.
 
 # Code Build webhook filters  
 See if we can change the type of code build object that is created in the stack (e.g.,
 use code build only instead of code pipeline) so that we can set webhook filters to trigger
 the build on tagged release instead of push to branch.
 
-# Revert back build environment
-docker-compose:  comment out the other folder mounts and environment params
-tsdat-cdk.code-workspace:  comment out the other folder paths
-
-rebuild images
-
-merge aws-template dev branch to main branch
-
-# The build is not correctly detecting the pipelines that changed.  
-Problem is this env variable is for the aws repo, NOT the pipelines repo
-CODEBUILD_RESOLVED_SOURCE_VERSION = 2121288948a3dac8c9a90c5d625aa6a31d18ec43
-
-# Switching trigger types (cron vs s3) doesn't register
-Need to erase the previous trigger before setting the new one.
-
 # Let users override storage.yaml file
 Users need to specify the storage yaml path in aws template and the corresponding
 storage file in the pipelines repo. Then if specified build will replace the pipelines
 storage with the aws storage.
 
-
-aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin  332883119153.dkr.ecr.us-west-2.amazonaws.com
+# Add cloudwatch alarms for the lambda functions if there are errors in the log
