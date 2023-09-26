@@ -8,9 +8,7 @@ services:
         command: ['tail', '-f',  '/dev/null']
         volumes:
             - ./:/root/cdk_app
-            - ../tsdat:/root/tsdat
-            - ../ingest-buoy:/root/ingest-buoy
             - ${HOME}/.aws:/root/.aws
         environment:
-            - PYTHONPATH=/root/tsdat:/root/ingest-buoy:/root/cdk_app/
+            - PYTHONPATH=/root/cdk_app/
 

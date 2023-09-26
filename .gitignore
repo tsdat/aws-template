@@ -15,3 +15,7 @@ cdk.out
 /**/__pycache__
 /**/.cdk.staging
 code_build/test/*
+
+# Carina's development files
+docker-compose-carina.yml
+.vscode/tsdat-cdk-carina.code-workspace
