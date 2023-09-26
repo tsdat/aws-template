@@ -229,6 +229,7 @@ def lambda_handler(event, context):
             assert len(inputs) >= 1, "No input files found!"
 
         if len(inputs) > 0:
+            logger.info("Running with inputs: {inputs}")
             pipeline.run(inputs)
 
         success = True

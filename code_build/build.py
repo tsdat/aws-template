@@ -35,6 +35,7 @@ class TsdatPipelineBuild:
         self.lambda_client = boto3.client("lambda", region_name=self.config.region)
         self.events_client = boto3.client("events", region_name=self.config.region)
         self.s3_client = boto3.client("s3", region_name=self.config.region)
+        self.ecr_client = boto3.client("ecr", region_name=self.config.region)
 
     def find_changed_tsdat_pipelines(self) -> List[str]:
         """
@@ -228,6 +229,16 @@ class TsdatPipelineBuild:
             pass
 
         return data
+
+    def get_image_tags(self) -> List[str]:
+        tags = []
+        response = self.ecr_client.describe_images(
+            repositoryName=self.config.ecr_repo_name, filter={"tagStatus": "TAGGED"}
+        )
+        for details in response["imageDetails"]:
+            for tag in details["imageTags"]:
+                tags.append(tag)
+        return tags
 
     def create_lambda(self, pipeline_config: PipelineConfig, run_config: RunConfig):
         """
@@ -477,8 +488,19 @@ class TsdatPipelineBuild:
             )
             tsdat_pipelines_to_build = self.find_changed_tsdat_pipelines()
 
-            # TODO: For every pipeline in the file, check to see if it has been deployed.
-            # If not, then add it to the list.
+            # Look up the existing image tags for this deployment
+            tags_list = self.get_image_tags()
+
+            for pipeline_config in self.config.pipelines.values():
+                # If we have a new pipeline that has just been added to the pipelines
+                # config file, then even if there are no code changes for this new
+                # pipeline, we will build it anyway because it's new.
+                tag = self.config.get_image_tag(pipeline_config.name)
+                if (
+                    pipeline_config.name not in tsdat_pipelines_to_build
+                    and tag not in tags_list
+                ):
+                    tsdat_pipelines_to_build.append(pipeline_config.name)
 
         for tsdat_pipeline_name in tsdat_pipelines_to_build:
             print(f"Building Tsdat pipeline: {tsdat_pipeline_name}")
@@ -486,7 +508,7 @@ class TsdatPipelineBuild:
                 tsdat_pipeline_name
             )
             # If the config is null, then this pipeline isn't in the pipelines_config.yml
-            # yet.
+            # yet, so we won't build it.  TODO: send alert msg when this happens
             if pipeline_config:
                 self.build_pipeline_docker_image(tsdat_pipeline_name)
                 self.deploy_lambda(pipeline_config)
