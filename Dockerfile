@@ -25,13 +25,13 @@ RUN dpkg -i /root/session-manager-plugin.deb
 RUN apt-get install jq -y
 
 # This should be mounted to the repo in docker-compose.yml
-RUN mkdir /root/cdk_app
+RUN mkdir /root/aws-template
 
 # Set up default profile for aws cli
 ENV AWS_PROFILE=tsdat
 
 # Home dir is /root/
 # Make sure to mount ~/.aws folder to /root/.aws
-# Make sure to mount our cdk app to /root/cdk_app
+# Make sure to mount our cdk app to /root/aws-template
 
-WORKDIR /root/cdk_app
+WORKDIR /root/aws-template

@@ -7,8 +7,8 @@ services:
         build: .
         command: ['tail', '-f',  '/dev/null']
         volumes:
-            - ./:/root/cdk_app
+            - ./:/root/aws-template
             - ${HOME}/.aws:/root/.aws
         environment:
-            - PYTHONPATH=/root/cdk_app/
+            - PYTHONPATH=/root/aws-template/
 

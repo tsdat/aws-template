@@ -1,9 +1,11 @@
 # Deploying Tsdat Pipelines to AWS
 This repository contains everything needed to deploy your Tsdat pipelines to Amazon
-Web Services (AWS).  The following picuture gives a high level overview of the
+Web Services (AWS).  The following picutures give a high level overview of the
 build process and what resources are created in AWS.
 
 ![Image](./images/aws_template.png)
+![Image](./images/tsdat-aws-code-build.png) 
+![Image](./images/tsdat-aws-functional-diagram.png)
 
 
 # Prerequisites
@@ -76,7 +78,7 @@ Select tsdat-cdk
 From the VSCode window that is attached to the tsdat-cdk container:
 
 * File-> Open Workspace from File...
-* In the file chooser dialog, select ```/root/cdk_app/.vscode/cdk.code-workspace```
+* In the file chooser dialog, select ```/root/aws-template/.vscode/cdk.code-workspace```
 
 A box should pop up in the bottom right corner that asks if you want to install the 
 recommended extensions.  Select **Install**.
@@ -84,7 +86,7 @@ recommended extensions.  Select **Install**.
 Once the extensions are installed, your workspace is ready!  In the Explorer, you
 will see two folders:
 
-* cdk_app
+* aws-template
 * .aws
 
 ### **6. Edit your pipelines_config.yml file**
@@ -96,7 +98,7 @@ sure to fill out all the sections (build parameters and pipelines).
 ### **7. Configure your tsdat AWS profile (one time only)**
 tsdat profile:
 ```
-root@tsdat-cdk:~/cdk_app# aws configure --profile tsdat
+root@tsdat-cdk:~/aws-template# aws configure --profile tsdat
 AWS Access Key ID [****************X3EN]: 
 AWS Secret Access Key [****************6o89]: 
 Default region name [None]: us-west-2
@@ -133,10 +135,25 @@ aws_session_token=XXXXXX
 ```
 
 
-### **8. Run the cdk bootstrap (Only need to do this the FIRST time you deploy)**
+### **8. Run the cdk bootstrap (Only ONCE for your AWS Account/Region!)**
+Bootstrapping is the process of provisioning resources for the AWS CDK before you can 
+deploy AWS CDK apps into an AWS environment. (An AWS environment is a combination of an 
+AWS account and Region).
+
+These resources include an Amazon S3 bucket for storing files and IAM roles that grant 
+permissions needed to perform deployments.
+
+The required resources are defined in an AWS CloudFormation stack, called the bootstrap 
+stack, which is usually named CDKToolkit. Like any AWS CloudFormation stack, it appears 
+in the AWS CloudFormation console once it has been deployed.
+
+**Check your Cloud Formation stacks first to see if you need to deploy the bootstrap. 
+(e.g., https://us-west-2.console.aws.amazon.com/cloudformation/home?region=us-west-2)
+If you see a stack named `CDKToolkit``, then you can SKIP this step.**
+
 ``` 
 cd aws-template
-cdk bootstrap
+./bootstrap_cdk.sh
 ```
 
 ### **9. Run the cdk build**
