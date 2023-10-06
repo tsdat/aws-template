@@ -7,9 +7,11 @@ build process and what resources are created in AWS.
 ![Image](./images/tsdat-aws-code-build.png) 
 ![Image](./images/tsdat-aws-functional-diagram.png)
 
-<span style="color:red">NOTE: This deployment can only be run by AWS administrators, so we
+{% tip %}
+NOTE: This deployment can only be run by AWS administrators, so we
 assume the user has a basic understanding of code development, Docker containers, and
-the AWS cloud.</span>
+the AWS cloud.
+{% endtip %}
 
 # Prerequisites
 
