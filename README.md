@@ -9,8 +9,8 @@ build process and what resources are created in AWS.
 
 ```diff
 - NOTE: This deployment can only be run by AWS administrators, so we
-assume the user has a basic understanding of code development, Docker containers, and
-the AWS cloud.
+- assume the user has a basic understanding of code development, Docker containers, and
+- the AWS cloud.
 ```
 
 # Prerequisites
