@@ -32,7 +32,3 @@ else
     # Deploy via cdk
     cdk deploy --require-approval never
 fi
-
-
-
-

@@ -13,7 +13,3 @@ set -e
 # don't need it for the bootstrap.  So we can pass any value here.
 export BRANCH=bootstrap
 cdk bootstrap
-
-
-
-
