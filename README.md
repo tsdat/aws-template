@@ -7,9 +7,10 @@ build process and what resources are created in AWS.
 ![Image](./images/tsdat-aws-code-build.png) 
 ![Image](./images/tsdat-aws-functional-diagram.png)
 
-<span style="color:red">NOTE: This deployment can only be run by AWS administrators, so we
-assume the user has a basic understanding of code development, Docker containers, and
-the AWS cloud.</span>
+```diff
+!  NOTE: This deployment can only be run by AWS administrators, so we assume the user has
+!  a basic understanding of code development, Docker containers, and the AWS cloud.
+```
 
 # Prerequisites
 
@@ -19,9 +20,10 @@ following template repositories:
 1. https://github.com/tsdat/pipeline-template
 2. https://github.com/tsdat/aws-template
 
-<span style="color:red"><b>NOTE:  If you are using an existing pipelines repository, make sure that the
-requirements.txt file updates the tsdat version to `tsdat >=0.7.1` as the AWS
-build will not work with lower versions!</b></span>
+```diff
+!  NOTE:  If you are using an existing pipelines repository, make sure that the requirements.txt
+!  file updates the tsdat version to `tsdat >=0.7.1` as the AWS build will not work with lower versions!
+```
 
 ### **2. Get an AWS Account**
 In order to deploy resources to AWS, you must have an account set up and you **must have
@@ -66,10 +68,10 @@ Make sure if you are using WSL on Windows that you run the `git clone` command f
 a WSL terminal!
 
 ### **2. Open your aws-template repo in VSCode**
-<span style="color:red"><b>====>NOTE:  If you are using WSL on Windows then you MUST open
-VSCode from within a WSL terminal in
-order for VSCode to automatically install the proper WSL interface extension.</b></span>
-
+```diff
+!  NOTE:  If you are using WSL on Windows then you MUST open VSCode from within a WSL terminal
+!  in order for VSCode to automatically install the proper WSL interface extension.
+```
 
 For example, if you checked out the aws-template repository to your $HOME/projects/tsdat folder, then
 you would run this to start VSCode:
@@ -105,8 +107,10 @@ From the VSCode window that is attached to the tsdat-cdk container:
     Main Menu -> File-> Open Workspace from File...
     In the file chooser dialog, select ```/root/aws-template/.vscode/cdk.code-workspace```
 
-<span style="color:red">A box should pop up in the bottom right corner that asks if you want to install the 
-recommended extensions.  Select **Install**.</span>
+```diff
+!  A box should pop up in the bottom right corner that asks if you want to install the recommended
+!  extensions.  Select "Install".
+```
 
 Once the extensions are installed, your workspace is ready!  In the Explorer, you
 will see two folders:
@@ -118,7 +122,9 @@ will see two folders:
 Do this from the VSCode window that is attached to the tsdat-cdk container.  Make
 sure to fill out all the sections (build parameters and pipelines).
 
-<span style="color:red">**Don't forget to copy the ARN of your CodeStar Connection!**</span>
+```diff
+! Don't forget to copy the ARN of your CodeStar Connection!
+```
 
 ### **7. Configure your tsdat AWS profile (one time only)**
 From a terminal inside VSCode, run these commands:
@@ -138,11 +144,14 @@ region = us-west-2
 
 ### **8. Edit your aws credentials**
 CDK requires that your AWS credentials be set in order to authenticate your CLI actions.
-<span style="color:red">NOTE:  You must use AWS credentials file, NOT the PNNL SSO login,
-which is not supported by the CDK.</span>
+```diff
+!  NOTE:  You must use AWS credentials file, NOT the PNNL SSO login, which is not supported by the CDK.
+```
 
-<span style="color:red">You will need to do this BEFORE you deploy your stack and any time the credentials
-expire (usually after about 12 hours).</span>
+```diff
+!  You will need to do this step BEFORE you deploy your stack and any time the credentials expire
+!  (usually after about 12 hours).
+```
 
 From your VSCode window that is attached to the tsdat-cdk container:
 * From the Explorer view, open the .aws/credentials file.  
@@ -187,8 +196,10 @@ cd aws-template
 You can re-run this for each branch you want to deploy (e.g., dev, prod, etc.) and any time
 you make changes to the stack (for example, you add a new permission to your lambda role).
 
-<span style="color:red">NOTE: Most deployments will not need to change anything in the stack, but advanced users
-are free to customize.</span>
+```diff
+!  NOTE: Most deployments will not need to change anything in the stack, but advanced users 
+!  are free to customize.
+```
 
 ```
 cd aws-template
