@@ -64,8 +64,10 @@ you lose all your container environments).  Also, Docker Desktop requires a lice
 # Deploying your pipelines
 
 ### **1. Clone your aws repo and your pipelines repo.**
-Make sure if you are using WSL on Windows that you run the `git clone` command from
-a WSL terminal!
+```diff
+!  IMPORTANT: Make sure if you are using WSL on Windows that you run the `git clone` command from
+!  a WSL terminal!
+```
 
 ### **2. Open your aws-template repo in VSCode**
 ```diff
