@@ -168,6 +168,7 @@ class CodePipelineStack(Stack):
                     "ecr:UploadLayerPart",
                     "ecr:CompleteLayerUpload",
                     "ecr:PutImage",
+                    "ecr:SetRepositoryPolicy",
                     "ecs:UpdateService",
                     "codepipeline:ListPipelineExecutions",
                     "codepipeline:GetPipelineState",

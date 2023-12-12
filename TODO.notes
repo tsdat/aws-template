@@ -24,3 +24,25 @@ storage file in the pipelines repo. Then if specified build will replace the pip
 storage with the aws storage.
 
 # Add cloudwatch alarms for the lambda functions if there are errors in the log
+
+
+# Make sure that input_bucket_path can take wildcard patterns
+1. In lambda fn, is passed in as a Prefix parameter to paginator.paginate method in boto3
+   when looking up files.
+   - This can't have wildcards in it, so we would need to get the recently
+   modified raw files from the folder in the event trigger instead
+   of directly using the folder path from the config file.
+
+2. In build, it is used in the filter rules object when calling 
+   s3_client.put_bucket_notification_configuration
+   "FilterRules": [
+            {"Name": "prefix", "Value": subpath},
+   ]
+
+For cron triggers, we have to know the specific folder to run, 
+not a wildcard pattern.
+
+AWS does not let you use wildcards.  We will need to make the
+input_bucket_path in the configs be a list instead of a single value. 
+
+root/humboldt/humboldt.buoy_z05-imu.00
