@@ -244,6 +244,7 @@ class CodePipelineStack(Stack):
             self.config.ecr_repo_name,
             repository_name=self.config.ecr_repo_name,
             removal_policy=RemovalPolicy.DESTROY,
+            auto_delete_images=True,
         )
 
         # TODO: can we add tags to the repo?
