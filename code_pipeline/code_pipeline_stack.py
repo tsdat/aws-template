@@ -271,6 +271,8 @@ class CodePipelineStack(Stack):
                 resources=[
                     f"arn:aws:s3:::{self.config.input_bucket_name}/*",
                     f"arn:aws:s3:::{self.config.output_bucket_name}/*",
+                    f"arn:aws:s3:::{self.config.input_bucket_name}",
+                    f"arn:aws:s3:::{self.config.output_bucket_name}",
                 ],
                 actions=["s3:*"],
             )
