@@ -1,15 +1,16 @@
-# TODO: This file will replace the logger.py file in each target repository
+# This file will replace the logger.py file in each target repository
 
-import os
 import json
 import logging
-
-from logging import Formatter, LogRecord, StreamHandler, Logger
+import os
+from logging import Formatter, Logger, LogRecord, StreamHandler
 from logging.handlers import MemoryHandler
-from typing import Dict
+from typing import Dict, Optional
 
-
-logger = logging.getLogger(__name__)
+# Remove the extra handler(s) that AWS attaches when running in lambda to prevent
+# duplicate log messages in our own logging handler
+ROOT_LOGGER = logging.getLogger()
+AWS_HANDLERS = ROOT_LOGGER.handlers.copy()
 
 
 class DelayedJSONStreamHandler(MemoryHandler):
@@ -19,7 +20,12 @@ class DelayedJSONStreamHandler(MemoryHandler):
     messages and additional context that is passed to the handler constructor.
     """
 
-    def __init__(self, target: StreamHandler = None, context: Dict = None, **kwargs):
+    def __init__(
+        self,
+        target: Optional[StreamHandler] = None,
+        context: Optional[Dict] = None,
+        **kwargs
+    ):
         """Initializes a `DelayedJSONStreamHandler`. If `target` is not provided at
         initialization, it must be provided later, otherwise no records will be emitted.
 
@@ -31,7 +37,7 @@ class DelayedJSONStreamHandler(MemoryHandler):
         """
 
         super().__init__(
-            capacity=1e7,
+            capacity=int(1e7),
             target=target,
             flushOnClose=False,
         )
@@ -44,11 +50,18 @@ class DelayedJSONStreamHandler(MemoryHandler):
     def shouldFlush(self, record: LogRecord) -> bool:
         return False  # Don't flush the buffer automatically
 
-    def flush(self, context: Dict = None) -> None:
+    def flush(self, context: Optional[Dict] = None) -> None:
         """Ensure that all logging calls have been flushed. This method is automatically
         called when the program exits, but may be called earlier as well.
         """
-        if context == None:
+
+        # Add the AWS Handler(s) back so that the flushed message can be shown in the
+        # CloudWatch logs
+        if len(ROOT_LOGGER.handlers) == 1:
+            for handler in AWS_HANDLERS:
+                ROOT_LOGGER.addHandler(handler)
+
+        if context is None:
             context = dict()
 
         self.context.update(context)
@@ -64,40 +77,38 @@ class DelayedJSONStreamHandler(MemoryHandler):
                 dumped = json.dumps(log_dict)
 
                 # Use the target
-                self.target.stream.write(dumped + self.target.terminator)
-                self.target.stream.flush()
+                self.target.stream.write(dumped + self.target.terminator)  # type: ignore
+                self.target.stream.flush()  # type: ignore
                 self.buffer = []
         finally:
             self.release()
 
 
-def configure_logger(logger: Logger, context: Dict = None):
-    if not context:
+def configure_logger(logger: Logger, context: Optional[Dict] = None):
+    if context is None:
         context = dict()
 
     # Log level for all other packages
-    root = logging.getLogger()
-    root.setLevel(os.environ.get("ROOT_LOG_LEVEL", "INFO"))
+    ROOT_LOGGER.setLevel(os.environ.get("ROOT_LOG_LEVEL", "INFO"))
+    for handler in ROOT_LOGGER.handlers:
+        ROOT_LOGGER.removeHandler(handler)
 
-    # Log level for anything installed in tsdat
-    tsdat_logger = logging.getLogger("tsdat")
-    tsdat_logger.setLevel(os.environ.get("TSDAT_LOG_LEVEL", "INFO"))
-
-    # Log level for this file
+    # Log level for this package
     logger.setLevel(os.environ.get("LOG_LEVEL", "DEBUG"))
 
+    # Log level for anything installed in tsdat
+    logging.getLogger("tsdat").setLevel(os.environ.get("TSDAT_LOG_LEVEL", "INFO"))
+
+    # Add buffered logger so all messages are output in one message in CloudWatch
     target = logging.StreamHandler()
     target.setFormatter(
         Formatter("[%(asctime)s: %(pathname)s %(levelname)s] %(message)s")
     )
-
     dmh = DelayedJSONStreamHandler(target=target, context=context)
-
-    root.addHandler(dmh)
+    ROOT_LOGGER.addHandler(dmh)
 
 
 def get_log_message(*args, **kwargs):
     raise NotImplementedError(
         "This method is kept only for backwards compatibility and should not be used."
     )
-
