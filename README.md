@@ -90,7 +90,7 @@ From your VSCode window, start a terminal
 
 Then from the VSCode terminal, run:
  ```
- docker pull nikolaik/python-nodejs:python3.11-nodejs20
+ docker build --platform linux/amd64 . -t tsdat-cdk
  docker compose up -d
  ```
 
