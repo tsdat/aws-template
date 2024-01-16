@@ -1,7 +1,7 @@
 # Deploying Tsdat Pipelines to AWS
 
 This repository contains everything needed to deploy your Tsdat pipelines to Amazon
-Web Services (AWS).  The following picutures give a high level overview of the
+Web Services (AWS).  The following pictures give a high level overview of the
 build process and what resources are created in AWS.
 
 ![Image](./images/aws_template.png)
@@ -13,7 +13,7 @@ build process and what resources are created in AWS.
 !  a basic understanding of code development, Docker containers, and the AWS cloud.
 ```
 
-# Prerequisites
+## Prerequisites
 
 ### **1. Create GitHub Repositories from Template**
 
@@ -31,11 +31,12 @@ following template repositories:
 ### **2. Get an AWS Account**
 
 In order to deploy resources to AWS, you must have an account set up and you **must have
-administrator priviledges** on that account.  If you do not have an AWS account or you
-do not have admin priviledges, then you should contact the local cloud administrator
+administrator privileges** on that account.  If you do not have an AWS account or you
+do not have admin privileges, then you should contact the local cloud administrator
 for your organization.
 
 ### **3. Create an AWS CodeStar Connection to GitHub**
+
 <https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html#connections-create-github-console>
 
 **Don't forget to copy the ARN of your connection to the pipelines_config.yml file.**
@@ -43,7 +44,7 @@ for your organization.
 ### **4. Install Docker**
 
 We use a Docker container with VSCode to make setting up your development environment
-a snap.  We assume users have a basic familarity with Docker containers. If you are
+a snap.  We assume users have a basic familiarity with Docker containers. If you are
 new to Docker, there are many free online tutorials to get you started.
 
 *NOTE: Because Docker Desktop can be flaky, especially on Windows, we recommend not using it.
@@ -67,7 +68,7 @@ you lose all your container environments).  Also, Docker Desktop requires a lice
 - [Install VSCode](https://code.visualstudio.com/download)
 - Install the **ms-vscode-remote.vscode-remote-extensionpack** extension
 
-# Deploying your pipelines
+## Deploying your pipelines
 
 ### **1. Clone your aws repo and your pipelines repo into the same parent folder.**
 
@@ -86,7 +87,7 @@ you lose all your container environments).  Also, Docker Desktop requires a lice
 For example, if you checked out the aws-template repository to your $HOME/projects/tsdat folder, then
 you would run this to start VSCode:
 
-```
+```shell
 cd $HOME/projects/tsdat
 code aws-template
 ```
@@ -100,9 +101,9 @@ From your VSCode window, start a terminal
 
 Then from the VSCode terminal, run:
 
- ```
- docker build --platform linux/amd64 . -t tsdat-cdk
- docker compose up -d
+ ```shell
+docker build --platform linux/amd64 . -t tsdat-cdk
+docker compose up -d
  ```
 
 ### **4. Attach a new VSCode window to the tsdat-cdk container**
@@ -146,7 +147,7 @@ sure to fill out all the sections (build parameters and pipelines).
 
 From a terminal inside VSCode, run these commands:
 
-```
+```txt
 root@tsdat-cdk:~/aws-template# aws configure --profile tsdat
 AWS Access Key ID [****************X3EN]: 
 AWS Secret Access Key [****************6o89]: 
@@ -156,7 +157,7 @@ Default output format [None]:
 
 Your ~/.aws/config file should now look like this:
 
-```
+```txt
 [profile tsdat]
 region = us-west-2
 ```
@@ -175,7 +176,8 @@ CDK requires that your AWS credentials be set in order to authenticate your CLI 
 ```
 
 From your VSCode window that is attached to the tsdat-cdk container:
-- From the Explorer view, open the .aws/credentials file.  
+
+- From the Explorer view, open the .aws/credentials file.
 - Then go to the AWS login page `https://pnnl.awsapps.com/start`
 - Then click $PROJECT_NAME -> Administrator -> Command line or programmatic access  (use whatever project you are admin for)
 - In the section, "Option 2: Manually add a profile to your AWS credentials file (Short-term credentials)",
@@ -185,7 +187,7 @@ the line [xxxxx _AdministratorAccess])
 
 Your credentials file should look like this (with real values instead of the XXXX):
 
-```
+```txt
 [tsdat]
 aws_access_key_id=XXXXXXX
 aws_secret_access_key=XXXXXX
@@ -207,9 +209,9 @@ in the AWS CloudFormation console once it has been deployed.
 
 **Check your Cloud Formation stacks first to see if you need to deploy the bootstrap.
 (e.g., <https://us-west-2.console.aws.amazon.com/cloudformation/home?region=us-west-2>)
-If you see a stack named `CDKToolkit``, then you can SKIP this step.**
+If you see a stack named `CDKToolkit`, then you can SKIP this step.**
 
-```
+```shell
 cd aws-template
 ./bootstrap_cdk.sh
 ```
@@ -224,12 +226,14 @@ you make changes to the stack (for example, you add a new permission to your lam
 !  are free to customize.
 ```
 
-```
+```shell
 cd aws-template
-./deploy_stack.sh $BRANCH   (where $BRANCH is the branch you want to deploy (e.g., dev/prod))
+./deploy_stack.sh $BRANCH
 ```
 
-# Viewing your Resources in AWS
+(where `$BRANCH` is the branch you want to deploy (e.g., dev/prod))
+
+## Viewing your Resources in AWS
 
 You can use the AWS UI to view the resources that were created via the build.
 
@@ -246,6 +250,7 @@ From here you can check the status of your built images.
 <https://us-west-2.console.aws.amazon.com/ecr/repositories?region=us-west-2>
 
 ## S3 Buckets
+
 <https://s3.console.aws.amazon.com/s3/buckets?region=us-west-2>
 
 ## Lambda Functions
@@ -255,6 +260,7 @@ You can see the lambda functions that were created for each pipeline here.
 <https://us-west-2.console.aws.amazon.com/lambda/home?region=us-west-2#/functions>
 
 ## Event Bridge Cron Rules
+
 <https://us-west-2.console.aws.amazon.com/events/home?region=us-west-2#/rules>
 
 ## Cloud Formation Stack
