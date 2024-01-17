@@ -1,0 +1,73 @@
+# This file configures all pipelines to be deployed on AWS.
+
+###################################################################
+# Build Parameters
+###################################################################
+github_org: 
+pipelines_repo_name: pipeline-template
+aws_repo_name: aws-template
+
+# AWS Information
+account_id: "XXXXXXXXXXXX"
+region: us-west-2
+input_bucket_name: your-input-bucket-name
+output_bucket_name: your-output-bucket-name
+create_buckets: True # Should the stack create the buckets for you - pick False if they already exist
+
+# Create a CodeStar connection to allow AWS to have access to your GitHub repositories
+# https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html#connections-create-github-console
+github_codestar_arn: arn:aws:codestar-connections:us-west-2:... 
+
+###################################################################
+# Array of pipelines.  Each pipeline has the following properties:
+#
+#   name -      Name of the pipeline.
+#
+#   type -      Ingest or VAP
+#
+#   trigger -   What will trigger the pipeline.  Can be S3 or Cron.
+#               S3 means a trigger from new files in the input
+#               bucket.  Cron means a trigger from a cron scheduled
+#               lambda.  Most of the time, Ingest pipelines will
+#               use S3, but they can use cron if multiple files
+#               need to be processed together.  VAP pipelines
+#               must always use cron.
+#
+#  schedule -  Schedule for cron triggers.  Can be Hourly, Daily,
+#              Weekly, or Monthly.  Only used if trigger is cron.
+#
+#  configs  -  Instances where this pipeline should run on a unique
+#              set of files..
+#
+#                key - run id
+#
+#                config_file_path - Relative path from the
+#                      pipelines_repository where the Tsdat pipeline
+#                      config file is located for this run
+#
+#                input_bucket_path: If this is an Ingest that is triggered
+#                      by an S3 bucket event, then list the relative path
+#                      (from the bucket root) where these raw
+#                      files will be uploaded
+#
+###################################################################
+pipelines:
+  - name: lidar
+    type: Ingest
+    trigger: S3
+
+    configs:
+      humboldt:
+        input_bucket_path: lidar/humboldt/
+        config_file_path: pipelines/lidar/config/pipeline_humboldt.yaml
+      morro:
+        input_bucket_path: lidar/morro/
+        config_file_path: pipelines/lidar/config/pipeline_morro.yaml
+
+  - name: lidar_vap
+    type: VAP
+    trigger: Cron
+    schedule: Hourly
+    configs:
+      humboldt:
+        config_file_path: pipelines/lidar_vap/config/pipeline.yaml
