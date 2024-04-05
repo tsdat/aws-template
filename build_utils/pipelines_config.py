@@ -10,6 +10,14 @@ class RunConfig:
     def __init__(self, run_id: str, values: dict):
         self.id = run_id
         self.input_bucket_path = values.get("input_bucket_path")
+        if self.input_bucket_path:
+            # If user specified the path starting with ./ or / that is BAD.  We
+            # need to strip these characters off the front of the path.
+            if self.input_bucket_path.startswith("./"):
+                self.input_bucket_path = self.input_bucket_path[2:]
+            if self.input_bucket_path.startswith("/"):
+                self.input_bucket_path = self.input_bucket_path[1:]
+
         self.config_file_path = values.get("config_file_path")
 
 
