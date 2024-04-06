@@ -361,6 +361,18 @@ class TsdatPipelineBuild:
                             Principal="s3.amazonaws.com",
                             SourceArn=self.config.input_bucket_arn,
                         )
+                    else:
+                        self.lambda_client.remove_permission(
+                            FunctionName=lambda_arn,
+                            StatementId=statement_id,
+                        )
+                        self.lambda_client.add_permission(
+                            FunctionName=lambda_arn,
+                            StatementId=statement_id,
+                            Action="lambda:InvokeFunction",
+                            Principal="s3.amazonaws.com",
+                            SourceArn=self.config.input_bucket_arn,
+                        )
 
                     subpath: str = run_config.input_bucket_path
                     subpath = f"{subpath}/" if not subpath.endswith("/") else subpath

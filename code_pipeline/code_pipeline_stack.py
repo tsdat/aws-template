@@ -181,6 +181,7 @@ class CodePipelineStack(Stack):
                     "lambda:GetFunctionConfiguration",
                     "lambda:UpdateFunctionCode",
                     "lambda:AddPermission",
+                    "lambda:RemovePermission",
                     "lambda:GetPolicy",
                     "iam:PassRole",
                     "codecommit:GitPull",
