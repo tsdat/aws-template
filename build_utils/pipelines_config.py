@@ -127,7 +127,7 @@ class PipelinesConfig:
         return f"{self.ecr_repo}:{self.get_image_tag(tsdat_pipeline_name)}"
 
     def get_lambda_name(self, tsdat_pipeline_name: str, config_id: str):
-        return f"{self.base_name}-lambda-{tsdat_pipeline_name}-{config_id}"
+        return f"{self.base_name}-{tsdat_pipeline_name}-{config_id}"
 
     def get_lambda_arn(self, tsdat_pipeline_name: str, config_id: str):
         # f'arn:aws:lambda:{YOUR_REGION}:{YOUR_ACCOUNT_ID}:function:{lambda_function_name}'
