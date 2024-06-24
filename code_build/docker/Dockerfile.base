@@ -5,7 +5,7 @@
 # The context for building this image should be the root of the pipelines
 # repository.
 #################################################################################
-FROM public.ecr.aws/lambda/python:3.9
+FROM public.ecr.aws/lambda/python:3.10
 
 # Copy the python dependencies
 COPY requirements.txt .
@@ -21,7 +21,7 @@ RUN /opt/miniconda/bin/conda env create --file environment.yml --prefix /opt/con
 RUN /opt/conda-env/bin/pip install awslambdaric
 
 # We now replace the image’s existing Python with Python from the conda environment:
-RUN mv /var/lang/bin/python3.9 /var/lang/bin/python3.9-clean && ln -sf /opt/conda-env/bin/python /var/lang/bin/python3.9
+RUN mv /var/lang/bin/python3.10 /var/lang/bin/python3.10-clean && ln -sf /opt/conda-env/bin/python /var/lang/bin/python3.10
 RUN mv /var/lang/bin/pip3 /var/lang/bin/pip3-old && ln -sf /opt/conda-env/bin/pip /var/lang/bin/pip3
 
 
