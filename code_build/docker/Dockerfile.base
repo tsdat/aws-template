@@ -24,6 +24,8 @@ RUN /opt/conda-env/bin/pip install awslambdaric
 RUN mv /var/lang/bin/python3.9 /var/lang/bin/python3.9-clean && ln -sf /opt/conda-env/bin/python /var/lang/bin/python3.9
 RUN mv /var/lang/bin/pip3 /var/lang/bin/pip3-old && ln -sf /opt/conda-env/bin/pip /var/lang/bin/pip3
 
+# Add location of udunits installed path
+ENV UDUNITS2_XML_PATH=/opt/conda-env/share/udunits/udunits2.xml
 
 # Copy over all the shared code into the image
 COPY utils utils
