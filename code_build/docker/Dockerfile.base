@@ -9,6 +9,7 @@ FROM public.ecr.aws/lambda/python:3.9
 
 # Copy the python dependencies
 COPY requirements.txt .
+COPY requirements-dev.txt .
 COPY environment.yml .
 
 # Install Conda and create tsdat environment
