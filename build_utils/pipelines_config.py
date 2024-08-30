@@ -42,12 +42,12 @@ class PipelineConfig:
             return "cron(0 0/1 * * ? *)"
 
         elif self.schedule == Schedule.Weekly:
-            # 2 am on the first day of the week
-            return "cron(0 2 ? * 1 *)"
+            # 2:30 am on the first day of the week
+            return "cron(30 2 ? * 1 *)"
 
         elif self.schedule == Schedule.Monthly:
-            # 2 am on the first day of the month
-            return "cron(0 2 1 * ? *)"
+            # 3 am on the first day of the month
+            return "cron(0 3 1 * ? *)"
 
         else:  # Daily is default if not specified
             # 2 am daily
