@@ -1,7 +1,7 @@
 import logging
 import os
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List
 
@@ -107,12 +107,23 @@ def get_available_vap_dates(pipeline, output_datastream) -> List[str]:
         logger.info("No new input files available to run!")
 
     else:
-        # We will run the VAP for any days that were changed/added.  For now we will
-        # run the full range of days.  Later we can split into non-contiguous
-        # segments to improve processing.
-        modified_days = sorted(modified_days)
-        start_day = round_time_to_midnight(modified_days[0])
-        end_day = get_next_day(round_time_to_midnight(modified_days[-1]))
+        # If new files were found, we'll just run the last specified time noted.
+        # Previous times will need to be rerun locally.
+
+        # Start from previous X, at midnight UTC.
+        cron_schedule = PIPELINE_CONFIG.schedule
+        if cron_schedule=="Hourly":
+            td = timedelta(hours=1)
+        elif cron_schedule=="Daily":
+            td = timedelta(days=1)
+        elif cron_schedule=="Weekly":
+            td = timedelta(days=7)
+        elif cron_schedule=="Monthly":
+            td = timedelta(weeks=4)
+
+        modified_days: datetime = datetime.now(timezone.utc) - td
+        start_day = round_time_to_midnight(modified_days)
+        end_day = round_time_to_midnight(modified_days) + td
 
         # Start and end dates for the pipeline need to be strings in this
         # format: 20230101
