@@ -17,6 +17,10 @@ RUN yum update -y && yum install -y wget && yum clean all
 
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh && sh Miniconda3-latest-Linux-x86_64.sh -b -p /opt/miniconda
 
+# Need to accept Anaconda's terms of service as of July 15, 2025
+RUN /opt/miniconda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+RUN /opt/miniconda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+
 RUN /opt/miniconda/bin/conda env create --file environment.yml --prefix /opt/conda-env
 
 RUN /opt/conda-env/bin/pip install awslambdaric
