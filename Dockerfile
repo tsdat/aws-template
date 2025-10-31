@@ -1,7 +1,7 @@
 
 FROM nikolaik/python-nodejs:python3.11-nodejs20
 
-ARG AWS_CDK_VERSION=2.93.0
+ARG AWS_CDK_VERSION=2.208.0
 
 RUN npm install -g aws-cdk@${AWS_CDK_VERSION}
 RUN apt update -y && apt install -y nano

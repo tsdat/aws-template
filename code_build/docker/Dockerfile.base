@@ -5,7 +5,7 @@
 # The context for building this image should be the root of the pipelines
 # repository.
 #################################################################################
-FROM public.ecr.aws/lambda/python:3.9
+FROM public.ecr.aws/lambda/python:3.12
 
 # Copy the python dependencies
 COPY requirements.txt .
@@ -13,7 +13,7 @@ COPY requirements-dev.txt .
 COPY environment.yml .
 
 # Install Conda and create tsdat environment
-RUN yum update -y && yum install -y wget && yum clean all
+RUN dnf update -y && dnf install -y wget && dnf clean all
 
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh && sh Miniconda3-latest-Linux-x86_64.sh -b -p /opt/miniconda
 
@@ -26,7 +26,7 @@ RUN /opt/miniconda/bin/conda env create --file environment.yml --prefix /opt/con
 RUN /opt/conda-env/bin/pip install awslambdaric
 
 # We now replace the image’s existing Python with Python from the conda environment:
-RUN mv /var/lang/bin/python3.9 /var/lang/bin/python3.9-clean && ln -sf /opt/conda-env/bin/python /var/lang/bin/python3.9
+RUN mv /var/lang/bin/python3.12 /var/lang/bin/python3.12-clean && ln -sf /opt/conda-env/bin/python /var/lang/bin/python3.12
 RUN mv /var/lang/bin/pip3 /var/lang/bin/pip3-old && ln -sf /opt/conda-env/bin/pip /var/lang/bin/pip3
 
 # Add location of udunits installed path
