@@ -112,13 +112,13 @@ def get_available_vap_dates(pipeline, output_datastream) -> List[str]:
 
         # Start from previous X, at midnight UTC.
         cron_schedule = PIPELINE_CONFIG.schedule
-        if cron_schedule=="Hourly":
+        if cron_schedule == "Hourly":
             td = timedelta(hours=1)
-        elif cron_schedule=="Daily":
+        elif cron_schedule == "Daily":
             td = timedelta(days=1)
-        elif cron_schedule=="Weekly":
+        elif cron_schedule == "Weekly":
             td = timedelta(days=7)
-        elif cron_schedule=="Monthly":
+        elif cron_schedule == "Monthly":
             td = timedelta(weeks=4)
 
         modified_days: datetime = datetime.now(timezone.utc) - td
@@ -260,6 +260,12 @@ def lambda_handler(event, context):
         for handler in logging.getLogger().handlers:
             if isinstance(handler, DelayedJSONStreamHandler):
                 handler.flush(context=extra_context)
+
+        # Remove files from temp directory
+        if PIPELINE_CONFIG.type == PipelineType.Ingest:
+            for input_file in inputs:
+                if os.path.exists(input_file):
+                    os.remove(input_file)
 
     return not success  # Convert successful exit codes to 0
 
