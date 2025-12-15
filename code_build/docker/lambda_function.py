@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -250,6 +251,10 @@ def lambda_handler(event, context):
         logger.exception("Failed to run the pipeline.")
 
     finally:
+        # Clean up all files in the temp directory after running
+        logger.info(f"Cleaning up temporary files from {TMP_DIRPATH}")
+        shutil.rmtree(TMP_DIRPATH)
+
         extra_context = {
             "success": success,
             "inputs": inputs,
@@ -260,12 +265,6 @@ def lambda_handler(event, context):
         for handler in logging.getLogger().handlers:
             if isinstance(handler, DelayedJSONStreamHandler):
                 handler.flush(context=extra_context)
-
-        # Remove files from temp directory
-        if PIPELINE_CONFIG.type == PipelineType.Ingest:
-            for input_file in inputs:
-                if os.path.exists(input_file):
-                    os.remove(input_file)
 
     return not success  # Convert successful exit codes to 0
 
